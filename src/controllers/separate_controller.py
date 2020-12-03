@@ -4,7 +4,7 @@ from .basic_controller import BasicMAC
 import torch as th
 
 
-# multi-agent controller with separete parameters for each agent.
+# multi-agent controller with separete parameters for each agent.  ( param-sharing but not have hidden state)
 class SeparateMAC(BasicMAC):
     def __init__(self, scheme, groups, args):
         super(SeparateMAC, self).__init__(scheme, groups, args)

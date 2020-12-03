@@ -45,7 +45,7 @@ class EpisodeRunner:
         self.env.reset()
         self.t = 0
 
-    def run(self, test_mode=False):
+    def run(self, test_mode=False):  # run one eps
         self.reset()
 
         terminated = False

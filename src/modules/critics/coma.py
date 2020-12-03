@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class COMACritic(nn.Module):
+class COMACritic(nn.Module):  # centralized critic (with access of state and independent obs)
     def __init__(self, scheme, args):
         super(COMACritic, self).__init__()
 
@@ -31,16 +31,17 @@ class COMACritic(nn.Module):
         max_t = batch.max_seq_length if t is None else 1
         ts = slice(None) if t is None else slice(t, t+1)
         inputs = []
-        # state
+        # construct state for each agent | [bs, 1 or seq_len, n_agents, state_size]
         inputs.append(batch["state"][:, ts].unsqueeze(2).repeat(1, 1, self.n_agents, 1))
 
-        # observation
+        # observation | [bs, 1 or seq_len, n_agents, obs_size]
         inputs.append(batch["obs"][:, ts])
 
-        # actions (masked out by agent)
+        # actions (masked out by agent) | [bs, 1 or seq_len, n_agents, action_num] ? come back when upstream actions
         actions = batch["actions_onehot"][:, ts].view(bs, max_t, 1, -1).repeat(1, 1, self.n_agents, 1)
-        agent_mask = (1 - th.eye(self.n_agents, device=batch.device))
+        agent_mask = (1 - th.eye(self.n_agents, device=batch.device))  # reverse eye (n_agents, n_agents)
         agent_mask = agent_mask.view(-1, 1).repeat(1, self.n_actions).view(self.n_agents, -1)
+        # (n_agents, n_agents*n_actions)
         inputs.append(actions * agent_mask.unsqueeze(0).unsqueeze(0))
 
         # last actions
@@ -55,6 +56,7 @@ class COMACritic(nn.Module):
 
         inputs.append(th.eye(self.n_agents, device=batch.device).unsqueeze(0).unsqueeze(0).expand(bs, max_t, -1, -1))
 
+        # turn list inputs into tensor array
         inputs = th.cat([x.reshape(bs, max_t, self.n_agents, -1) for x in inputs], dim=-1)
         return inputs
 

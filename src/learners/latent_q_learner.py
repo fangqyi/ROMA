@@ -54,13 +54,13 @@ class LatentQLearner(QLearner):
         # Calculate estimated Q-Values
         mac_out = []
 
-        self.mac.init_hidden(batch.batch_size)
+        self.mac.init_hidden(batch.batch_size)  # initialize before training in episodes
         indicator, latent, latent_vae = self.mac.init_latent(batch.batch_size)
 
         reg_loss = 0
         dis_loss = 0
         ce_loss = 0
-        for t in range(batch.max_seq_length):
+        for t in range(batch.max_seq_length):  # slice [t:t+1] in the training
             agent_outs, loss_, dis_loss_, ce_loss_ = self.mac.forward(batch, t=t, t_glob=t_env, train_mode=True)  # (bs,n,n_actions),(bs,n,latent_dim)
             reg_loss += loss_
             dis_loss += dis_loss_

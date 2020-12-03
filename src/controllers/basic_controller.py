@@ -11,7 +11,6 @@ class BasicMAC:
         input_shape = self._get_input_shape(scheme)
         self._build_agents(input_shape)
         self.agent_output_type = args.agent_output_type
-
         self.action_selector = action_REGISTRY[args.action_selector](args)
 
         self.hidden_states = None
@@ -29,7 +28,7 @@ class BasicMAC:
         agent_outs, self.hidden_states = self.agent(agent_inputs, self.hidden_states)
 
         # Softmax the agent outputs if they're policy logits
-        if self.agent_output_type == "pi_logits":
+        if self.agent_output_type == "pi_logits":  # (0, 1) -> (-inf, inf)
 
             if getattr(self.args, "mask_before_softmax", True):
                 # Make the logits for unavailable actions very negative to minimise their affect on the softmax

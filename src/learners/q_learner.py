@@ -46,13 +46,13 @@ class QLearner:
         # Calculate estimated Q-Values
         mac_out = []
         self.mac.init_hidden(batch.batch_size)
-        #self.mac.init_latent(batch.batch_size)
+        # self.mac.init_latent(batch.batch_size)
 
         for t in range(batch.max_seq_length):
-            agent_outs = self.mac.forward(batch, t=t) #(bs,n,n_actions)
-            mac_out.append(agent_outs) #[t,(bs,n,n_actions)]
+            agent_outs = self.mac.forward(batch, t=t)  # (bs,n,n_actions)
+            mac_out.append(agent_outs)  # [t,(bs,n,n_actions)]
         mac_out = th.stack(mac_out, dim=1)  # Concat over time
-        #(bs,t,n,n_actions), Q values of n_actions
+        # (bs,t,n,n_actions), Q values of n_actions
 
         # Pick the Q-Values for the actions taken by each agent
         chosen_action_qvals = th.gather(mac_out[:, :-1], dim=3, index=actions).squeeze(3)  # Remove the last dim
@@ -60,24 +60,24 @@ class QLearner:
 
         # Calculate the Q-Values necessary for the target
         target_mac_out = []
-        self.target_mac.init_hidden(batch.batch_size) # (bs,n,hidden_size)
-        #self.target_mac.init_latent(batch.batch_size)
+        self.target_mac.init_hidden(batch.batch_size)  # (bs,n,hidden_size)
+        # self.target_mac.init_latent(batch.batch_size)
 
         for t in range(batch.max_seq_length):
-            target_agent_outs = self.target_mac.forward(batch, t=t) #(bs,n,n_actions)
-            target_mac_out.append(target_agent_outs) #[t,(bs,n,n_actions)]
+            target_agent_outs = self.target_mac.forward(batch, t=t)  # (bs,n,n_actions)
+            target_mac_out.append(target_agent_outs)  # [t,(bs,n,n_actions)]
 
         # We don't need the first timesteps Q-Value estimate for calculating targets
         target_mac_out = th.stack(target_mac_out[1:], dim=1)  # Concat across time, dim=1 is time index
-        #(bs,t,n,n_actions)
+        # (bs,t,n,n_actions)
 
         # Mask out unavailable actions
-        target_mac_out[avail_actions[:, 1:] == 0] = -9999999 # Q values
+        target_mac_out[avail_actions[:, 1:] == 0] = -9999999  # Q values
 
         # Max over target Q-Values
-        if self.args.double_q: # True for QMix
+        if self.args.double_q:  # True for QMix
             # Get actions that maximise live Q (for double q-learning)
-            mac_out_detach = mac_out.clone().detach() #return a new Tensor, detached from the current graph
+            mac_out_detach = mac_out.clone().detach() # return a new Tensor, detached from the current graph
             mac_out_detach[avail_actions == 0] = -9999999
                             # (bs,t,n,n_actions), discard t=0
             cur_max_actions = mac_out_detach[:, 1:].max(dim=3, keepdim=True)[1] # indices instead of values
@@ -88,7 +88,7 @@ class QLearner:
             target_max_qvals = target_mac_out.max(dim=3)[0]
 
         # Mix
-        if self.mixer is not None:
+        if self.mixer is not None:  # reassign q values over individual-decided q values
             chosen_action_qvals = self.mixer(chosen_action_qvals, batch["state"][:, :-1])
             target_max_qvals = self.target_mixer(target_max_qvals, batch["state"][:, 1:])
             # (bs,t,1)
@@ -97,7 +97,7 @@ class QLearner:
         targets = rewards + self.args.gamma * (1 - terminated) * target_max_qvals
 
         # Td-error
-        td_error = (chosen_action_qvals - targets.detach()) # no gradient through target net
+        td_error = (chosen_action_qvals - targets.detach())  # no gradient through target net
         # (bs,t,1)
 
         mask = mask.expand_as(td_error)
@@ -105,13 +105,13 @@ class QLearner:
         # 0-out the targets that came from padded data
         masked_td_error = td_error * mask
 
-        # Normal L2 loss, take mean over actual data
+        # Normal L2 loss, take mean over actual data (LSE)
         loss = (masked_td_error ** 2).sum() / mask.sum()
 
         # Optimise
         self.optimiser.zero_grad()
         loss.backward()
-        grad_norm = th.nn.utils.clip_grad_norm_(self.params, self.args.grad_norm_clip)# max_norm
+        grad_norm = th.nn.utils.clip_grad_norm_(self.params, self.args.grad_norm_clip)  # max_norm
         self.optimiser.step()
 
         if (episode_num - self.last_target_update_episode) / self.args.target_update_interval >= 1.0:

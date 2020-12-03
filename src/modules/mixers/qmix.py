@@ -21,29 +21,29 @@ class QMixer(nn.Module):
         self.hyper_b_1 = nn.Linear(self.state_dim, self.embed_dim)
 
         # V(s) instead of a bias for the last layers
-        self.V = nn.Sequential(nn.Linear(self.state_dim, self.embed_dim),
+        self.V = nn.Sequential(nn.Linear(self.state_dim, self.embed_dim),  # nn.Sequential function as a container
                                nn.ReLU(),
                                nn.Linear(self.embed_dim, 1))
 
                     #(bs,t,n),
-    def forward(self, agent_qs, states):
-        bs = agent_qs.size(0)
+    def forward(self, agent_qs, states):  # agent_qs: (batch_num, seq_len, agent_num)
+        bs = agent_qs.size(0)  # batch size
         states = states.reshape(-1, self.state_dim)
-        agent_qs = agent_qs.view(-1, 1, self.n_agents)
+        agent_qs = agent_qs.view(-1, 1, self.n_agents)  # (bs*t, 1, agent_num)
         # First layer
-        w1 = th.abs(self.hyper_w_1(states))
-        b1 = self.hyper_b_1(states)
-        w1 = w1.view(-1, self.n_agents, self.embed_dim)
-        b1 = b1.view(-1, 1, self.embed_dim)
-        hidden = F.elu(th.bmm(agent_qs, w1) + b1)
+        w1 = th.abs(self.hyper_w_1(states))  # produce the 1st layer hidden weights for each agent from state : (bs, t, embed_dim * n)
+        b1 = self.hyper_b_1(states)  # produce state-dependent hidden bias : (bs, embed_dim)
+        w1 = w1.view(-1, self.n_agents, self.embed_dim) # (bs*t, n, embed_dim)
+        b1 = b1.view(-1, 1, self.embed_dim)  # (bs*t, 1, embed_dim) | same for each batch?
+        hidden = F.elu(th.bmm(agent_qs, w1) + b1)  # (bs*t, 1, embed_dim)
 
         # Second layer
-        w_final = th.abs(self.hyper_w_final(states))
-        w_final = w_final.view(-1, self.embed_dim, 1)
+        w_final = th.abs(self.hyper_w_final(states))  # produce (bs*t, embed_dim)
+        w_final = w_final.view(-1, self.embed_dim, 1)  # (bs*t, embed_dim, 1)
         # State-dependent bias
-        v = self.V(states).view(-1, 1, 1)
+        v = self.V(states).view(-1, 1, 1)  # bias (bs*t, 1, 1)
         # Compute final output
-        y = th.bmm(hidden, w_final) + v
+        y = th.bmm(hidden, w_final) + v  # (bs*t, 1, 1)
         # Reshape and return
-        q_tot = y.view(bs, -1, 1)
+        q_tot = y.view(bs, -1, 1)  # (bs, t, 1)
         return q_tot #(bs,t,1)

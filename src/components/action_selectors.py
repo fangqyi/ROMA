@@ -4,7 +4,7 @@ from .epsilon_schedules import DecayThenFlatSchedule
 
 REGISTRY = {}
 
-
+# used for single agent
 class MultinomialActionSelector():
 
     def __init__(self, args):

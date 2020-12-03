@@ -39,7 +39,7 @@ def _get_config(params, arg_name, subfolder):
     for _i, _v in enumerate(params):
         if _v.split("=")[0] == arg_name:
             config_name = _v.split("=")[1]
-            del params[_i]
+            del params[_i]  # used once
             break
 
     if config_name is not None:
