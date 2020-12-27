@@ -17,13 +17,13 @@ class QLearner:
         self.last_target_update_episode = 0
 
         self.mixer = None
-        if args.mixer is not None:
-            if args.mixer == "vdn":
+        if args.lat_state_mixer is not None:
+            if args.lat_state_mixer == "vdn":
                 self.mixer = VDNMixer()
-            elif args.mixer == "qmix":
+            elif args.lat_state_mixer == "qmix":
                 self.mixer = QMixer(args)
             else:
-                raise ValueError("Mixer {} not recognised.".format(args.mixer))
+                raise ValueError("Mixer {} not recognised.".format(args.lat_state_mixer))
             self.params += list(self.mixer.parameters())
             self.target_mixer = copy.deepcopy(self.mixer)
 
@@ -77,7 +77,7 @@ class QLearner:
         # Max over target Q-Values
         if self.args.double_q:  # True for QMix
             # Get actions that maximise live Q (for double q-learning)
-            mac_out_detach = mac_out.clone().detach() # return a new Tensor, detached from the current graph
+            mac_out_detach = mac_out.clone().detach()  # return a new Tensor, detached from the current graph
             mac_out_detach[avail_actions == 0] = -9999999
                             # (bs,t,n,n_actions), discard t=0
             cur_max_actions = mac_out_detach[:, 1:].max(dim=3, keepdim=True)[1] # indices instead of values

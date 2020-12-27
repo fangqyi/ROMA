@@ -1,3 +1,5 @@
+import torch
+
 from src.runners import EpisodeRunner
 
 
@@ -17,27 +19,35 @@ class SCEpisodeRunner(EpisodeRunner):
 
         while not terminated:
             cur_state = self.env.get_state()
+            latent_state = self.mac.infer_latent_state(torch.tensor(cur_state).unsqueeze(0))
+            latent_state_div = self.mac.compute_lat_state_kl_div()
+
             pre_transition_data = {
                 "state": [cur_state],
                 "avail_actions": [self.env.get_avail_actions()],
-                "obs": [self.env.get_obs()]
+                "obs": [self.env.get_obs()],
+                "latent_state": latent_state,
+                "latent_state_kl_div": [(latent_state_div,)]
             }
 
             self.batch.update(pre_transition_data, ts=self.t)
 
             # Pass the entire batch of experiences up till now to the agents
-            # Receive the actions for each agent at this timestep in a batch of size 1
-            latent_state = self.mac.infer_latent_state(cur_state)
+            # Receive the actions for each agent at this timestep in a batch of size
             actions = self.mac.select_actions(self.batch, t_ep=self.t, t_env=self.t_env, test_mode=test_mode)
 
-            reward, terminated, env_info = self.env.step(actions[0])
+            reward, terminated, env_info = self.env.step(actions[0])  # to remove [batch_size]
             episode_return += reward
+
+            dec_lat_states = self.mac.get_dec_lat_state() # [1][n_agents][latent_state]
+            dec_lat_states_div = self.mac.compute_dec_lat_state_kl_div()
 
             post_transition_data = {
                 "actions": actions,
                 "reward": [(reward,)],
                 "terminated": [(terminated != env_info.get("episode_limit", False),)],
-                "latent_state": [latent_state],
+                "dec_lat_states": dec_lat_states,
+                "dec_lat_states_kl_div": [(dec_lat_states_div,)],
             }
 
             self.batch.update(post_transition_data, ts=self.t)
@@ -45,17 +55,26 @@ class SCEpisodeRunner(EpisodeRunner):
             self.t += 1
 
         last_state = self.env.get_state()
+        latent_state = self.mac.infer_latent_state(torch.tensor(last_state).unsqueeze(0))
+        latent_state_div = self.mac.compute_lat_state_kl_div()
+
         last_data = {
             "state": [last_state],
             "avail_actions": [self.env.get_avail_actions()],
             "obs": [self.env.get_obs()],
+            "latent_state": latent_state,
+            "latent_state_kl_div": [(latent_state_div,)],
         }
         self.batch.update(last_data, ts=self.t)
 
         # Select actions in the last stored state
         actions = self.mac.select_actions(self.batch, t_ep=self.t, t_env=self.t_env, test_mode=test_mode)
+        dec_lat_states = self.mac.get_dec_lat_state()
+        dec_lat_states_div = self.mac.compute_dec_lat_state_kl_div()
+
         self.batch.update({"actions": actions,
-                           "latent_state": [self.mac.infer_latent_state(last_state)],
+                           "dec_lat_states": dec_lat_states,
+                           "dec_lat_states_kl_div": [(dec_lat_states_div,)],
                            }, ts=self.t)
 
         cur_stats = self.test_stats if test_mode else self.train_stats

@@ -22,7 +22,7 @@ class MLPMultiGaussianEncoder(nn.Module):
         super(MLPMultiGaussianEncoder, self).__init__()
         self.mlp = FlattenMLP(
             input_size=input_size,
-            output_size=output_size,
+            output_size=2*output_size if use_information_bottleneck else output_size,  # vars + means
             hidden_sizes=mlp_hidden_sizes,
             init_w=mlp_init_w,
             hidden_activation=mlp_hidden_activation,
@@ -52,7 +52,7 @@ class MLPMultiGaussianEncoder(nn.Module):
             self.z = self.z_means
 
     def forward(self, input):
-        params = self.mlp(input)  #[batch_size, output_size]
+        params = self.mlp(input)  #[batch_size, 2*output_size]
         if self.use_information_bottleneck:
             mu = params[..., :self.output_size]
             sigma_squared = F.softplus(params[..., self.output_size:])
@@ -60,7 +60,7 @@ class MLPMultiGaussianEncoder(nn.Module):
             self.z_means = torch.stack([p[0] for p in z_params])
             self.z_vars = torch.stack([p[1] for p in z_params])
         else:
-            self.z_means = torch.mean(params, dim=1)
+            self.z_means = torch.mean(params, dim=1)  # FIXME: doublecheck
             self.z_vars = None
         self.sample_z()
 

@@ -7,11 +7,11 @@ class SCAgent(nn.Module):  # FIXME: Does SCAgent need to extend nn.Module
     def __init__(self, input_shapes, output_shapes, args):
         super(SCAgent, self).__init__()
         self.args = args
-        lstm_input_shape, dlstm_input_shape = input_shapes
-        lstm_output_shape, dlstm_output_shape = output_shapes
+        lstm_input_shape, dlstm_input_shape, dec_latent_state_input_shape = input_shapes
+        lstm_output_shape, dlstm_output_shape, dec_latent_state_output_shape = output_shapes
         self.LSTM_agent = LSTMAgent(lstm_input_shape, lstm_output_shape, args)
         self.dLSTM_agent = DilatedLSTMAgent(dlstm_input_shape, dlstm_output_shape, args)
-        self.goal_transform = nn.Linear(self.args.goal_dim, self.args.n_actions, bias=False)
+        self.g_lin_trans = nn.Linear(self.args.goal_dim, self.args.n_actions, bias=False)
         self.action_softmax = nn.Softmax()
         self.goals = []
 
@@ -21,20 +21,28 @@ class SCAgent(nn.Module):  # FIXME: Does SCAgent need to extend nn.Module
         self.goals = []
         return lstm_init_state, dlstm_init_state
 
-    def forward(self, inputs, hidden_state, goal):
+    def forward(self, inputs, hidden_state, goals):
         lstm_inputs, dlstm_inputs = inputs
         lstm_hidden_state, dlstm_hidden_state = hidden_state
 
-        self.goals.append(goal)
-        w_goals = torch.stack([self.goals[-t] for t in range(self.args.horizon)])
-        w_goals = torch.sum(w_goals, dim=0)  # [batch_size, goal_dim]
-        w_goals = self.goal_transform(w_goals)
+        # self.goals.append(goal)
+        # w_goals = torch.stack([self.goals[-t] for t in range(self.args.horizon)])
+        # w_goals = torch.sum(w_goals, dim=0)  # [batch_size, goal_dim]
+        # [batch_size*n_agents, goal_dim]
+        w_goals = self.g_lin_trans(goals)
 
         lstm_outs, lstm_hidden_state = self.LSTM_agent(lstm_inputs, lstm_hidden_state)
         dlstm_outs, dlstm_hidden_state = self.dLSTM_agent(dlstm_inputs, dlstm_hidden_state)
         lstm_outs = self.action_softmax(torch.mul(w_goals, lstm_outs))
 
         return (lstm_outs, dlstm_outs), (lstm_hidden_state, dlstm_hidden_state)
+
+    def lstm_parameters(self):
+        return self.LSTM_agent.parameters()
+
+    def dlstm_parameters(self):
+        return self.dLSTM_agent.parameters()
+
 
 class DilatedLSTMAgent(nn.Module):
     def __init__(self, input_shape, output_shape, args):
