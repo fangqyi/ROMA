@@ -239,5 +239,5 @@ class SCMAC():
 
     def _get_output_shapes(self, scheme):
         lstm_output_shapes = scheme["actions_onehot"]["vshape"][0]
-        dlstm_output_shapes = scheme["query"]["vshape"] + scheme["key"]["vshape"] + scheme["rule"]["vshape"]
+        dlstm_output_shapes = scheme["queries"]["vshape"] + scheme["keys"]["vshape"] + scheme["rules"]["vshape"]
         return lstm_output_shapes, dlstm_output_shapes
