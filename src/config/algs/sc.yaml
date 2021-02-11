@@ -30,8 +30,8 @@ mac: "sc_mac"
 
 use_lat_state_information_bottleneck: True
 attention_noramlization_dk: 1
-communication_query_and_signature_size: 32
-latent_state_dim: 64
+communication_query_and_signature_size: 16
+latent_state_dim: 32
 horizon: 30
 obs_latent_state: True
 obs_other_hidden_state: True
