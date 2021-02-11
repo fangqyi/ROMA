@@ -63,6 +63,9 @@ class SCLearner:
         self.execution_actor_optimiser = RMSprop(params=self.execution_actor_params, lr=args.execution_actor_lr, alpha=args.optim_alpha, eps=args.optim_eps)
         self.execution_critic_optimiser = RMSprop(params=self.execution_critic_params, lr=args.execution_critic_lr, alpha=args.optim_alpha, eps=args.optim_eps)
 
+        # self.target_mac = copy.deepcopy(mac)
+        # FIXME: implement double mac
+
     # control:
     #   - decentralized actor pi(|):
     #   - decentralized critic q(|) with mixer: estimate rewards
