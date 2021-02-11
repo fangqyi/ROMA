@@ -14,8 +14,7 @@ class SCEpisodeRunner(EpisodeRunner):
         terminated = False
         episode_return = 0
         self.mac.init_hidden(batch_size=self.batch_size)
-        if self.args.mac == "separate_mac":
-            self.mac.init_latent(batch_size=self.batch_size)
+        self.mac.init_goals(batch_size=self.batch_size)
 
         while not terminated:
             cur_state = self.env.get_state()
@@ -34,20 +33,19 @@ class SCEpisodeRunner(EpisodeRunner):
 
             # Pass the entire batch of experiences up till now to the agents
             # Receive the actions for each agent at this timestep in a batch of size
-            actions = self.mac.select_actions(self.batch, t_ep=self.t, t_env=self.t_env, test_mode=test_mode)
+            actions, control_outputs = self.mac.select_actions(self.batch, t_ep=self.t, t_env=self.t_env, test_mode=test_mode)
+            queries, keys, rules = control_outputs
 
             reward, terminated, env_info = self.env.step(actions[0])  # to remove [batch_size]
             episode_return += reward
 
-            dec_lat_states = self.mac.get_dec_lat_state() # [1][n_agents][latent_state]
-            dec_lat_states_div = self.mac.compute_dec_lat_state_kl_div()
-
             post_transition_data = {
                 "actions": actions,
+                "queries": queries,
+                "keys": keys,
+                "rules": rules,
                 "reward": [(reward,)],
                 "terminated": [(terminated != env_info.get("episode_limit", False),)],
-                "dec_lat_states": dec_lat_states,
-                "dec_lat_states_kl_div": [(dec_lat_states_div,)],
             }
 
             self.batch.update(post_transition_data, ts=self.t)
@@ -68,13 +66,13 @@ class SCEpisodeRunner(EpisodeRunner):
         self.batch.update(last_data, ts=self.t)
 
         # Select actions in the last stored state
-        actions = self.mac.select_actions(self.batch, t_ep=self.t, t_env=self.t_env, test_mode=test_mode)
-        dec_lat_states = self.mac.get_dec_lat_state()
-        dec_lat_states_div = self.mac.compute_dec_lat_state_kl_div()
+        actions, control_outputs = self.mac.select_actions(self.batch, t_ep=self.t, t_env=self.t_env, test_mode=test_mode)
+        queries, keys, rules = control_outputs
 
         self.batch.update({"actions": actions,
-                           "dec_lat_states": dec_lat_states,
-                           "dec_lat_states_kl_div": [(dec_lat_states_div,)],
+                           "queries": queries,
+                           "keys": keys,
+                           "rules": rules,
                            }, ts=self.t)
 
         cur_stats = self.test_stats if test_mode else self.train_stats

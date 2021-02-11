@@ -1,0 +1,64 @@
+
+# use epsilon greedy action selector
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time: 50
+
+runner: "sc_episode"
+batch_size_run: 1
+
+buffer_size: 50000
+
+# update the target network every {} episodes
+target_update_interval: 200
+
+# use the SC_Learner to train
+agent_output_type: "pi_logits"
+learner: "sc_learner"
+double_q: True
+control_mixer: "qmix"
+execution_mixer: "qmix"
+# rate for intrinsic rewards
+instr_r_rate: 0.8
+
+# for latent model
+name: "social_contact_latent_encoder"
+
+agent: "sc_agent"
+mac: "sc_mac"
+
+use_lat_state_information_bottleneck: True
+attention_noramlization_dk: 1
+communication_query_and_signature_size: 32
+latent_state_dim: 64
+horizon: 30
+obs_latent_state: True
+obs_other_hidden_state: True
+
+control_actor_lr: 0.0001
+control_critic_lr: 0.0001
+execution_actor_lr: 0.0001
+execution_critic_lr: 0.0001
+control_discount: 0.99
+execution_discount: 0.99
+cum_goal_zeros_penalty_rate: 0.3
+
+latent_dim: 3
+kl_loss_weight: 0.0001
+h_loss_weight: 0.0001
+var_floor: 0.002
+NN_HIDDEN_SIZE: 16
+dis_loss_weight: 0.001
+dis_time: 0
+soft_constraint_weight: 1.0
+roma_raw: False
+lstm_hidden_dim: 316
+
+dis_sigmoid: False
+
+use_tensorboard: True
+save_model: True
+use_cuda: True
+device_num: 0
+save_replay: False

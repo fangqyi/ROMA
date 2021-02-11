@@ -1,13 +1,12 @@
 import copy
 
 import torch
-from torch.optim import RMSprop
 import torch.nn.functional as F
+from torch.optim import RMSprop
 
-from src.modules.critics.sc import SCCritic
+from src.modules.critics.sc import SCControlCritic, SCExecutionCritic
 from src.modules.mixers.qmix import QMixer
 from src.modules.mixers.vdn import VDNMixer
-from src.utils.rl_utils import build_td_lambda_targets
 
 
 class SCLearner:
@@ -23,32 +22,54 @@ class SCLearner:
 
         self.log_stats_t = -self.args.learner_log_interval - 1
 
-        self.critic = SCCritic(scheme, args)
-        self.target_critic = copy.deepcopy(self.critic)
+        self.control_critic = SCControlCritic(scheme, args)
+        self.execution_critic = SCExecutionCritic(scheme, args)
+        self.target_control_critic = copy.deepcopy(self.control_critic)
+        self.target_execution_critic = copy.deepcopy(self.execution_critic)
 
-        self.agent_params = list(mac.parameters())
-        self.critic_params = list(self.critic.parameters())
-        self.params = self.agent_params + self.critic_params
+        self.control_actor_params = list([self.mac.agent_dlstm_parameters(), self.mac.latent_state_encoder_parameters()])  # FIXME: is it correct?
+        self.execution_actor_params = list(self.mac.agent_lstm_parameters())
+        self.control_critic_params = list(self.control_critic.parameters())
+        self.execution_critic_params = list(self.execution_critic.parameters())
 
-        self.lat_state_mixer = None
-        if args.lat_state_mixer is not None:
-            if args.lat_state_mixer == "vdn":
-                self.lat_state_mixer = VDNMixer()
-            elif args.lat_state_mixer == "qmix":
-                self.lat_state_mixer = QMixer(args)
+        self.control_mixer = None
+        if args.control_mixer is not None:
+            if args.control_mixer == "vdn":
+                self.control_mixer = VDNMixer()
+            elif args.control_mixer == "qmix":
+                self.control_mixer = QMixer(args)
             else:
-                raise ValueError("Mixer {} not recognised.".format(args.lat_state_mixer))
-            self.mixer_params = self.lat_state_mixer.parameters() + self.mac.dec_lac_state_func_parameters()
-            self.params += [self.lat_state_mixer.parameters(), self.mac.dec_lac_state_func_parameters()]
-            self.target_lat_state_mixer = copy.deepcopy(self.lat_state_mixer)
-        self.agent_lstm_params = self.mac.agent_lstm_parameters()
-        self.agent_dlstm_params = self.mac.agent_dlstm_parameters()
+                raise ValueError("Mixer {} not recognised.".format(args.control_mixer))
+            self.params += self.control_mixer.parameters()
+            self.target_control_mixer = copy.deepcopy(self.control_mixer)
+            self.control_critic_params += list(self.control_mixer.parameters())
 
-        self.mixer_optimiser = RMSprop(params=self.mixer_params, lr=args.mixer_lr, alpha=args.optim_alpha, eps=args.optim_eps)
-        self.agent_lstm_optimiser = RMSprop(params=self.agent_lstm_params, lr=args.actor_lr, alpha=args.optim_alpha, eps=args.optim_eps)
-        self.agent_dlstm_optimiser = RMSprop(params=self.agent_dlstm_params, lr=args.actor_lr, alpha=args.optim_alpha, eps=args.optim_eps)
-        self.critic_optimiser = RMSprop(params=self.critic_params, lr=args.critic_lr, alpha=args.optim_alpha,
-                                        eps=args.optim_eps)
+        self.execution_mixer = None
+        if args.execution_mixer is not None:
+            if args.execution_mixer == "vdn":
+                self.execution_mixer = VDNMixer()
+            elif args.execution_mixer == "qmix":
+                self.execution_mixer = QMixer(args)
+            else:
+                raise ValueError("Mixer {} not recognised.".format(args.execution_mixer))
+            self.params += self.execution_mixer.parameters()
+            self.target_execution_mixer = copy.deepcopy(self.execution_mixer)
+            self.execution_critic_params += list(self.execution_mixer.parameters())     
+
+        self.params = self.control_critic_params + self.execution_critic_params + self.control_actor_params + self.execution_actor_params
+        
+        self.control_actor_optimiser = RMSprop(params=self.control_actor_params, lr=args.control_actor_lr, alpha=args.optim_alpha, eps=args.optim_eps)
+        self.control_critic_optimiser = RMSprop(params=self.control_critic_params, lr=args.control_critic_lr, alpha=args.optim_alpha, eps=args.optim_eps)
+        self.execution_actor_optimiser = RMSprop(params=self.execution_actor_params, lr=args.execution_actor_lr, alpha=args.optim_alpha, eps=args.optim_eps)
+        self.execution_critic_optimiser = RMSprop(params=self.execution_critic_params, lr=args.execution_critic_lr, alpha=args.optim_alpha, eps=args.optim_eps)
+
+    # control:
+    #   - decentralized actor pi(|):
+    #   - decentralized critic q(|) with mixer: estimate rewards
+
+    # execution:
+    #   - decentralized actor pi(|):
+    #   - decentralized critic q(|) with mixer: estimate directional contributions
 
     def train(self, batch, t_env, epsidoe_num):
         bs = batch.batch_size
@@ -60,150 +81,261 @@ class SCLearner:
         mask[:, 1:] = mask[:, 1:] * (1 - terminated[:, :-1])
         avail_actions = batch["avail_actions"][:, :-1]
 
-        critic_mask = mask.clone()
-
         mask = mask.repeat(1, 1, self.n_agents).view(-1)
 
-        q_vals, critic_train_stats = self._train_critic(batch, rewards, terminated, actions)
+        dirs_vals, execution_critic_train_stats = self._train_execution_critic(batch)  
+        # [bs, seq_len, n_agents, latent_state_dim]
+        q_vals, control_critic_train_stats = self._train_control_critic(batch, rewards, terminated, actions)
+        # [bs, seq_len, n_agents]
+        self.critic_training_steps += 1
 
         actions = actions[:, :-1]
 
-        mac_out = []
+        lstm_out = []
+        dlstm_query_out = []
+        dlstm_key_out = []
+        dlstm_rule_out = []
         lstm_r = []
+        self.mac.init_hidden(bs)
+        self.mac.init_goals(bs)
         for t in range(batch["rewards"].shape[1] - 1):
             # skip inferring latent state
-            agent_outputs = self.mac.forward(batch, t)
-            mac_out.append(agent_outputs)  # [batch_num][n_agents][n_actions]
-            intr_goals = self.mac.get_current_goal()  # [batch_num][n_agents][rule_dim]
-            intr_r = self._get_instrinsic_r(batch, t, intr_goals)
+            lstm_output, dlstm_output = self.mac.forward(batch, t)
+            lstm_out.append(lstm_output)  # [batch_num][n_agents][n_actions]
+            dlstm_query_out.append(dlstm_output[0])
+            dlstm_key_out.append(dlstm_output[1])
+            dlstm_rule_out.append(dlstm_output[2])
+            intr_r = self._get_instrinsic_r(dirs_vals, t)
             lstm_r.append(self.args.instr_r_rate * intr_r + q_vals[:, t])
-        mac_out = torch.stack(mac_out, dim=1)
+        lstm_out = torch.stack(lstm_out, dim=1)
+        dlstm_query_out = torch.stack(dlstm_query_out, dim=1)
+        dlstm_key_out = torch.stack(dlstm_key_out, dim=1)
+        dlstm_rule_out = torch.stack(dlstm_rule_out, dim=1)
         lstm_r = torch.stack(lstm_r, dim=1)
 
+        dlstm_loss_partial = []
+        for t in range(batch["rewards"].shape[1] - self.args.horizon):  # FIXEME: can implement slice instead of t iterations
+            dlstm_loss_partial_t = self._get_dlistm_partial(dirs_vals, dlstm_query_out, dlstm_key_out, dlstm_rule_out,
+                                                              t)
+            dlstm_loss_partial.append(dlstm_loss_partial_t)
+        dlstm_loss_partial = torch.stack(dlstm_loss_partial, dim=1)  # [bs, seq_len-c, n_agents]
+
         # Mask out unavailable actions, renormalise (as in action selection)
-        mac_out[avail_actions == 0] = 0
-        mac_out = mac_out/mac_out.sum(dim=-1, keepdim=True)
-        mac_out[avail_actions == 0] = 0
+        lstm_out[avail_actions == 0] = 0
+        lstm_out = lstm_out/lstm_out.sum(dim=-1, keepdim=True)
+        lstm_out[avail_actions == 0] = 0
 
         # FIXME: implement q baseline
+        q_vals = q_vals[:, :-self.args.horizon]
         q_vals = q_vals.reshape(-1, 1)
         lstm_r = lstm_r.reshape(-1, 1)
 
-        pi_taken = torch.gather(mac_out, dim=2, index=actions.reshape(bs, -1, 1)).squeeze(2)
+        pi_taken = torch.gather(lstm_out, dim=2, index=actions.reshape(bs, -1, 1)).squeeze(2)
         pi_taken[mask == 0] = 1.0
         pi_taken = torch.prod(pi_taken, dim=1).squeeze(1)
         log_pi_taken = torch.log(pi_taken)
+        dlstm_loss_partial.reshape(-1, 1)
 
-        dlstm_loss = ((log_pi_taken * q_vals.detach()) * mask).sum() / mask.sum()
+        dlstm_loss = ((torch.einsum('ij,ij->i', dlstm_loss_partial, q_vals.detach())) * mask).sum() / mask.sum()
+        dlstm_loss += self.mac.compute_lat_state_kl_div()
         lstm_loss = ((log_pi_taken * lstm_r) * mask).sum() / mask.sum()
 
-        self.agent_dlstm_optimiser.zero_grad()
+        self.control_actor_optimiser.zero_grad()
         dlstm_loss.backward()
-        dlstm_grad_norm = torch.nn.utils.clip_grad_norm_(self.agent_dlstm_params, self.args.grad_norm_clip)
-        self.agent_dlstm_optimiser.step()
-        self.agent_lstm_optimiser.zero_grad()
+        dlstm_grad_norm = torch.nn.utils.clip_grad_norm_(self.control_actor_params, self.args.grad_norm_clip)
+        self.control_actor_optimiser.step()
+
+        self.execution_actor_optimiser.zero_grad()
         lstm_loss.backward()
-        lstm_grad_norm = torch.nn.utils.clip_grad_norm_(self.agent_lstm_params, self.args.grad_norm_clip)
-        self.agent_lstm_optimiser.step()
+        lstm_grad_norm = torch.nn.utils.clip_grad_norm_(self.execution_actor_params, self.args.grad_norm_clip)
+        self.execution_actor_optimiser.step()
 
         if (self.critic_training_steps - self.last_target_update_step) / self.args.target_update_interval >= 1.0:
             self._update_targets()
             self.last_target_update_step = self.critic_training_steps
 
-    def _get_instrinsic_r(self, batch, t_ep, goals):
+        if t_env - self.log_stats_t >= self.args.learner_log_interval:
+            ts_logged = len(control_critic_train_stats["control_critic_td_loss"])
+            for key in ["control_critic_td_loss", "control_critic_grad_norm"]:
+                self.logger.log_stat(key, sum(control_critic_train_stats[key])/ts_logged, t_env)
+
+            ts_logged = len(execution_critic_train_stats["execution_critic_td_loss"])
+            for key in ["execution_critic_td_loss", "execution_critic_grad_norm"]:
+                self.logger.log_stat(key, sum(execution_critic_train_stats[key]) / ts_logged, t_env)
+
+            self.logger.log_stat("control_actor_loss", dlstm_loss.item(), t_env)
+            self.logger.log_stat("execution_actor_loss", lstm_loss.item(), t_env)
+            self.logger.log_stat("control_grad_norm", dlstm_grad_norm, t_env)
+            self.logger.log_stat("execution_grad_norm", lstm_grad_norm, t_env)
+            self.log_stats_t = t_env
+
+    def _get_instrinsic_r(self, dirs_val, t_ep):
         r = 0
         for t in range(0, min(self.args.horizon, t_ep)):
-            dec_lat_states = batch["dec_lat_state"][:, -(t+1)]  #[bs][n_agents][lat_dim]
+            idx = t+1
+            dec_lat_states = dirs_val[:, t_ep-idx]  # [bs][n_agents][lat_dim]
+            goals = self.mac.get_prev_goal(idx)  # [batch_num][n_agents][rule_dim]
+            # calculate the cosine similarity between agent's estimated contribution and its goal
             r += F.cosine_similarity(dec_lat_states, goals, dim=2)
-            r -= self.args.cum_goal_zeros_penalty_rate * F.cosine_similarity(torch.zeros(goals.shape, goals))
-        return r/self.args.horizon
+            # penalize if agent has no goal
+            r -= self.args.cum_goal_zeros_penalty_rate * F.cosine_similarity(torch.zeros(goals.shape), goals)
+        return r/self.args.horizon # [bs][n_agents]
 
-    def _train_mixer(self, batch, bs):
-        for t in range(batch["rewards"].shape[1]):
-            lat_state_target_dis = torch.sub(batch["latent_state"][:, t+1], batch["latent_state"][:, t]) # [bs_size][lat_dim]
-            lat_state_mixer_dis = self.lat_state_mixer(batch["dec_lat_state"][:, t].unsqueeze(1), batch["lat"]).squeeze(1).squeeze(1)  # [bs_size][t][lat_dim]
-            lat_state_loss = (torch.sub(lat_state_target_dis, lat_state_mixer_dis)**2).sum(1).sum(0)/(bs*self.args.lat_state_dim)
+    def _get_dlistm_partial(self, dirs_vals, queries, keys, rules, t):
+        # calculate dcos(zt+c−zt,gt(θ)) in multi-agent context
 
-            self.mixer_optimiser.zero_grad()
-            lat_state_loss.backward()
-            grad_norm = torch.nn.utils.clip_grad_norm_(self.mixer_params, self.args.grad_norm_clip)
-            self.mixer_optimiser.step()
-            # FIXME: Add training logs
+        dir_vals_t = dirs_vals[:, t]
+        dir_vals_tc = dir_vals_t[:, t+self.args.horizon]
+        query = queries[:, t]
+        key = keys[:, t]
+        rule = keys[:, t]
 
-    def _train_critic(self, batch, rewards, terminated, mask):
-        # Optimise critic
-        target_q_vals = self.target_critic(batch)[:, :]
-        #targets_taken = torch.gather(target_q_vals, dim=3, index=actions).squeeze(3)
+        dlstm_partial = []
+        for i in range(self.n_agents):
+            # calc decomposed latent's projection on rule at t
+            p_i = [torch.einsum('ij,ij->i', dir_vals_t[:, j], rule[:, i]) for j in range(self.n_agents)]
+            # rule is already normalized
+            p_i = torch.stack(p_i, dim=1)  # [bs, n_agents]
+            p_t = [torch.einsum('i,ij->ij', p_i[:, j], rule[:, i]) for j in range(self.n_agents)]
+            p_t = torch.stack(p_t, dim=1)  # [bs, n_agents, latent_state_dim]
 
-        # Calculate td-lambda targets
-        targets = build_td_lambda_targets(rewards, terminated, mask, target_q_vals , self.n_agents, self.args.gamma,
-                                          self.args.td_lambda)
+            # calc decomposed latent's projection on rule at t+c
+            p_i_c = [torch.einsum('ij,ij->i', dir_vals_tc[:, j], rule[:, i]) for j in range(self.n_agents)]
+            # rule is already normalized
+            p_i_c = torch.stack(p_i_c, dim=1)  # [bs, n_agents]
+            p_tc = [torch.einsum('i,ij->ij', p_i_c[:, j], rule[:, i]) for j in range(self.n_agents)]
+            p_tc = torch.stack(p_tc, dim=1)  # [bs, n_agents, latent_state_dim]
 
-        q_vals = torch.zeros_like(target_q_vals)[:, :-1]
+            p_diff = p_t - p_tc   # [bs, n_agents, latent_state_dim]
+
+            qk_i = [torch.einsum('ij,ij->i', query[:, i], key[:, j])  # 2d torch.dot
+                    / torch.sqrt(self.args.attention_noramlization_dk) for j in range(self.n_agents)]
+            qk_i_t = torch.stack(qk_i, dim=1)  # [bs, n_agents]
+            a_i = torch.nn.functional.softmax(qk_i_t, dim=1)
+            # eq 2 in TarMac
+
+            dlstm_partial_i = [torch.einsum("i,ij->ij", 1/a_i[:, j], p_diff[:, j]) for j in range(self.n_agents)]
+            dlstm_partial_i = torch.stack(dlstm_partial_i, dim=1).sum(dim=1)  # [bs, latent_state_dim]
+            dlstm_partial_i = F.cosine_similarity(dlstm_partial_i, rules[:, i], dim=1)
+
+            dlstm_partial.append(dlstm_partial_i)
+
+        return torch.stack(dlstm_partial, dim=1)  # [bs, n_agents]
+
+    def _train_control_critic(self, batch, rewards, terminated, mask):  # FIXME: terminated?
+        bs = batch.batch_size
+        qs_vals = torch.zeros(bs, batch["rewards"].shape[1], self.n_agents)
 
         running_log = {
-            "critic_loss": [],
-            "critic_grad_norm": [],
-            "td_error_abs": [],
-            "target_mean": [],
-            "q_taken_mean": [],
+            "control_critic_td_loss": [],
+            "control_critic_grad_norm": [],
         }
 
-        for t in reversed(range(rewards.size(1))):
+        for t in range(batch["rewards"].shape[1]-1):
             mask_t = mask[:, t].expand(-1, self.n_agents)
             if mask_t.sum() == 0:
                 continue
 
-            q_t = self.critic(batch, t)
-            q_vals[:, t] = q_t
-            targets_t = targets[:, t]
+            qs_t = self.control_critic(batch, t)  # [bs, n_agents]
+            qs_tot = self.control_mixer(qs_t.unsqueeze(1), batch["latent_state"][:, t].unsqueeze(1))
+            qs_vals[:, t] = qs_t
+            # [bs_size][t][lat_dim]
+            
+            target_qs_t = self.target_control_critic(batch, t+1)
+            target_qs_tot = self.target_control_mixer(target_qs_t.unsqueeze(1), batch["latent_state"][:, t+1].unsqueeze(1))  
 
-            td_error = (q_t - targets_t.detach())
+            td_loss = qs_tot - (rewards[:, t] + self.args.control_discount*target_qs_tot)
 
-            # 0-out the targets that came from padded data
-            masked_td_error = td_error * mask_t
+            self.control_critic_optimiser.zero_grad()
+            td_loss.backward()
+            grad_norm = torch.nn.utils.clip_grad_norm_(self.control_critic_params, self.args.grad_norm_clip)
+            self.control_critic_optimiser.step()
 
-            # Normal L2 loss, take mean over actual data
-            loss = (masked_td_error ** 2).sum() / mask_t.sum()
-            self.critic_optimiser.zero_grad()
-            loss.backward()
-            grad_norm = torch.nn.utils.clip_grad_norm_(self.critic_params, self.args.grad_norm_clip)
-            self.critic_optimiser.step()
-            self.critic_training_steps += 1
+            running_log["control_critic_td_loss"].append(td_loss.item())
+            running_log["control_critic_grad_norm"].append(grad_norm)
+        
+        return qs_vals, running_log
 
-            running_log["critic_loss"].append(loss.item())
-            running_log["critic_grad_norm"].append(grad_norm)
-            mask_elems = mask_t.sum().item()
-            running_log["td_error_abs"].append((masked_td_error.abs().sum().item() / mask_elems))
-            running_log["q_taken_mean"].append((q_t * mask_t).sum().item() / mask_elems)
-            running_log["target_mean"].append((targets_t * mask_t).sum().item() / mask_elems)
+    def _train_execution_critic(self, batch):
+        bs = batch.batch_size
+        dirs_tot_vals = torch.zeros(bs, batch["rewards"].shape[1], self.n_agents, self.args.latent_state_dim)
 
-        return q_vals, running_log
+        running_log = {
+            "execution_critic_td_loss": [],
+            "execution_critic_grad_norm": [],
+        }
+
+        for t in range(batch["rewards"].shape[1]-1):
+
+            # distance between latent states
+            lat_state_target_dis = torch.sub(batch["latent_state"][:, t+1], batch["latent_state"][:, t])
+            # [bs_size, latent_state_dim]
+
+            dirs_t = self.execution_critic(batch, t)  # [bs, n_agents, latent_state_dim]
+            dirs_tot = self.execution_mixer(dirs_t.unsqueeze(1), batch["latent_state"][:, t].unsqueeze(1))  
+            dirs_tot_vals[:, t] = dirs_t
+            # [bs_size][t][lat_dim]
+            
+            target_dirs_t = self.target_execution_critic(batch, t+1)
+            target_dirs_tot = self.target_execution_mixer(target_dirs_t.unsqueeze(1), batch["latent_state"][:, t+1].unsqueeze(1))  
+
+            td_loss = dirs_tot - (lat_state_target_dis + self.args.execution_discount*target_dirs_tot)
+
+            self.execution_critic_optimiser.zero_grad()
+            td_loss.backward()
+            grad_norm = torch.nn.utils.clip_grad_norm_(self.control_critic_params, self.args.grad_norm_clip)
+            self.execution_critic_optimiser.step()
+
+            running_log["execution_critic_td_loss"].append(td_loss.item())
+            running_log["execution_critic_grad_norm"].append(grad_norm)
+        
+        return dirs_tot_vals, running_log
 
     def _update_targets(self):
-        self.target_critic.load_state_dict(self.critic.state_dict())
+        self.target_control_critic.load_state_dict(self.control_critic.state_dict())
+        self.target_control_mixer.load_state_dict(self.control_mixer.state_dict())
+        self.target_execution_critic.load_state_dict(self.execution_critic.state_dict())
+        self.target_execution_mixer.load_state_dict(self.execution_mixer.state_dict())
         self.logger.console_logger.info("Updated target network")
 
     def cuda(self):
         self.mac.cuda()
-        self.critic.cuda()
-        self.target_critic.cuda()
+        self.control_critic.cuda()
+        self.execution_critic.cuda()
+        self.target_control_critic.cuda()
+        self.target_execution_critic.cuda()
+        self.control_mixer.cuda()
+        self.execution_mixer.cuda()
+        self.target_control_mixer()
+        self.target_execution_mixer()
 
     def save_models(self, path):
         self.mac.save_models(path)
-        torch.save(self.critic.state_dict(), "{}/critic.th".format(path))
-        torch.save(self.agent_lstm_optimiser.state_dict(), "{}/agent_lstm_opt.th".format(path))
-        torch.save(self.agent_dlstm_optimiser.state_dict(), "{}/agent_dlstm_opt.th".format(path))
-        torch.save(self.critic_optimiser.state_dict(), "{}/critic_opt.th".format(path))
+        torch.save(self.control_critic.state_dict(), "{}/control_critic.th".format(path))
+        torch.save(self.execution_critic.state_dict(), "{}/execution_critic.th".format(path))
+        torch.save(self.control_mixer.state_dict(), "{}/control_mixer.th".format(path))
+        torch.save(self.execution_mixer.state_dict(), "{}/execution_mixer.th".format(path))
+        torch.save(self.control_critic_optimiser.state_dict(), "{}/control_critic_opt.th".format(path))
+        torch.save(self.control_actor_optimiser.state_dict(), "{}/control_actor_opt.th".format(path))
+        torch.save(self.execution_critic_optimiser.state_dict(), "{}/execution_critic_opt.th".format(path))
+        torch.save(self.execution_actor_optimiser.state_dict(), "{}/execution_actor_opt.th".format(path))
 
     def load_models(self, path):
         self.mac.load_models(path)
-        self.critic.load_state_dict(torch.load("{}/critic.th".format(path), map_location=lambda storage, loc: storage))
+        self.control_critic.load_state_dict(torch.load(
+            "{}/control_critic.th".format(path), map_location=lambda storage, loc: storage))
         # Not quite right but I don't want to save target networks
-        self.target_critic.load_state_dict(self.critic.state_dict())
-        self.agent_lstm_optimiser.load_state_dict(
-            torch.load("{}/agent_lstm_opt.th".format(path), map_location=lambda storage, loc: storage))
-        self.agent_dlstm_optimiser.load_state_dict(
-            torch.load("{}/agent_dlstm_opt.th".format(path), map_location=lambda storage, loc: storage))
-        self.critic_optimiser.load_state_dict(
-            torch.load("{}/critic_opt.th".format(path), map_location=lambda storage, loc: storage))
+        self.execution_critic.load_state_dict(torch.load(
+            "{}/execution_critic.th".format(path), map_location=lambda storage, loc: storage))
+        self.control_mixer.load_state_dict(
+            torch.load("{}/control_mixer.th".format(path), map_location=lambda storage, loc: storage))
+        self.execution_mixer.load_state_dict(
+            torch.load("{}/execution_mixer.th".format(path), map_location=lambda storage, loc: storage))
+        self.control_actor_optimiser.load_state_dict(
+            torch.load("{}/control_actor_opt.th".format(path), map_location=lambda storage, loc: storage))
+        self.execution_actor_optimiser.load_state_dict(
+            torch.load("{}/execution_actor_opt.th".format(path), map_location=lambda storage, loc: storage))
+        self.control_critic_optimiser.load_state_dict(
+            torch.load("{}/control_critic_opt.th".format(path), map_location=lambda storage, loc: storage))
+        self.execution_critic_optimiser.load_state_dict(
+            torch.load("{}/execution_critic_opt.th".format(path), map_location=lambda storage, loc: storage))

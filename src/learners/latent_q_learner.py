@@ -87,7 +87,7 @@ class LatentQLearner(QLearner):
         # Calculate the Q-Values necessary for the target
         target_mac_out = []
         self.target_mac.init_hidden(batch.batch_size)  # (bs,n,hidden_size)
-        self.target_mac.init_latent(batch.batch_size)  # (bs,n,latent_size)
+        self.target_mac.init_latent(batch.batch_size)  # (bs,n,latent_size)oi
 
         for t in range(batch.max_seq_length):
             target_agent_outs, loss_cs_target, _, _ = self.target_mac.forward(batch,
