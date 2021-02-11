@@ -3,7 +3,7 @@
 from torch import nn
 from torch.nn import functional as F
 
-from garage.torch.modules.multi_headed_mlp_module import MultiHeadedMLPModule
+from modules.utils.multi_headed_mlp_module import MultiHeadedMLPModule
 
 
 class MLPModule(MultiHeadedMLPModule):

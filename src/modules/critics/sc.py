@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 
-from src.utils.utils import identity, fanin_init, LayerNorm, product_of_gaussians, zeros, ones
+from utils.utils import identity, fanin_init, LayerNorm, product_of_gaussians, zeros, ones
 
 
 class SCExecutionCritic(nn.Module):  # FIXME: Normalization across directional dims

@@ -4,9 +4,9 @@ import torch
 import torch.nn.functional as F
 from torch.optim import RMSprop
 
-from src.modules.critics.sc import SCControlCritic, SCExecutionCritic
-from src.modules.mixers.qmix import QMixer
-from src.modules.mixers.vdn import VDNMixer
+from modules.critics.sc import SCControlCritic, SCExecutionCritic
+from modules.mixers.qmix import QMixer
+from modules.mixers.vdn import VDNMixer
 
 
 class SCLearner:

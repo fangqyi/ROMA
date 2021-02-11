@@ -1,6 +1,6 @@
 import torch
 
-from src.runners import EpisodeRunner
+from runners import EpisodeRunner
 
 
 class SCEpisodeRunner(EpisodeRunner):
