@@ -25,7 +25,7 @@ instr_r_rate: 0.8
 # for latent model
 name: "social_contact_latent_encoder"
 
-agent: "sc_agent"
+agent: "sc"
 mac: "sc_mac"
 
 use_lat_state_information_bottleneck: True
