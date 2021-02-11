@@ -23,10 +23,10 @@ class LatentQLearner(QLearner):
         self.last_target_update_episode = 0
 
         self.mixer = None
-        if args.lat_state_mixer is not None:
-            if args.lat_state_mixer == "vdn":
+        if args.mixer is not None:
+            if args.mixer == "vdn":
                 self.mixer = VDNMixer()
-            elif args.lat_state_mixer == "qmix":
+            elif args.mixer == "qmix":
                 self.mixer = QMixer(args)
             else:
                 raise ValueError("Mixer {} not recognised.".format(args.lat_state_mixer))
