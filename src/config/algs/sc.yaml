@@ -54,6 +54,7 @@ dis_time: 0
 soft_constraint_weight: 1.0
 roma_raw: False
 lstm_hidden_dim: 316
+dilated_lstm_hidden_dim: 316
 
 dis_sigmoid: False
 
