@@ -228,7 +228,7 @@ class SCMAC():
         lstm_input_shape = input_shape
         dlstm_input_shape = input_shape
         if self.args.obs_last_action:
-            lstm_input_shape += scheme["actions_onehot"]["vshape"]
+            lstm_input_shape += scheme["actions_onehot"]["vshape"][0]
             dlstm_input_shape += (scheme["keys"]["vshape"] * 2 + scheme["latent_state"][
                 "vshape"])  # key_size + query_size + rule_size
         if self.args.obs_other_hidden_state:
@@ -238,6 +238,6 @@ class SCMAC():
         return lstm_input_shape, dlstm_input_shape
 
     def _get_output_shapes(self, scheme):
-        lstm_output_shapes = scheme["actions_onehot"]["vshape"]
+        lstm_output_shapes = scheme["actions_onehot"]["vshape"][0]
         dlstm_output_shapes = scheme["query"]["vshape"] + scheme["key"]["vshape"] + scheme["rule"]["vshape"]
         return lstm_output_shapes, dlstm_output_shapes
