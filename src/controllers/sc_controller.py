@@ -23,6 +23,7 @@ class SCMAC():
             output_size=self.args.laten_state_dim,
             mlp_hidden_sizes=args.latent_state_encoder_hidden_sizes)
 
+
     def select_actions(self, ep_batch, t_ep, t_env, bs=slice(None), test_mode=False):
         avail_actions = ep_batch["avail_actions"][:, t_ep]
         agent_outputs, control_outputs = self.forward(ep_batch, t_ep, test_mode=test_mode)
@@ -218,6 +219,7 @@ class SCMAC():
         return lstm_inputs, dlstm_inputs
 
     def _get_input_shapes(self, scheme):
+        print(scheme)
         input_shape = scheme["obs"]["vshape"]
         if self.args.obs_agent_id:
             input_shape += self.n_agents
