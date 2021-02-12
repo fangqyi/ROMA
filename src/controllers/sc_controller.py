@@ -124,6 +124,13 @@ class SCMAC():
         queries, keys, rules = horizon_outs.view(ep_batch.batch_size, self.n_agents, -1).split([self.comm_size,
                                                                                                 self.comm_size,
                                                                                                 self.rule_size], dim=-1)
+
+        print("keys, queries, rules shape in forward:")
+        print(queries.shape)
+        print(keys.shape)
+        print(rules.shape)
+        print()
+
         # [bs, n_agents, comm_size], [bs, n_agents, comm_size], [bs, n_agents, rule_size]
         rules = F.normalize(rules, dim=1)  # gt= ˆgt/||ˆgt||; in eq 3 from Feudal Net, no grad
 
@@ -196,7 +203,7 @@ class SCMAC():
                 dlstm_inputs.append(torch.zeros_like(batch["keys"][:, t]))
                 dlstm_inputs.append(torch.zeros_like(batch["queries"][:, t]))
                 dlstm_inputs.append(torch.zeros_like(batch["rules"][:, t]))
-                print("keys, queries, rules shape:")
+                print("keys, queries, rules shape in build inputs:")
                 print(batch["keys"][:, t].shape)
                 print(batch["queries"][:, t].shape)
                 print(batch["rules"][:, t].shape)
