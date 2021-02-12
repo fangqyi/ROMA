@@ -136,7 +136,7 @@ class SCLearner:
         pi_taken[mask == 0] = 1.0
         # pi_taken = torch.prod(pi_taken, dim=1).squeeze(1)
         log_pi_taken = torch.log(pi_taken)
-        print("dlstm_loss_partial shape: {}".format(dlstm_loss_partial))
+        print("dlstm_loss_partial shape: {}".format(dlstm_loss_partial.shape))
 
         dlstm_loss_partial = dlstm_loss_partial.reshape(-1, 1).squeeze(1)
 
