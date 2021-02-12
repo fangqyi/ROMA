@@ -62,6 +62,10 @@ class MLPMultiGaussianEncoder(nn.Module):
         else:
             self.z_means = torch.mean(params, dim=1)  # FIXME: doublecheck
             self.z_vars = None
+        print("z_means and z_vars shape")
+        print(self.z_means.shape)
+        print(self.z_vars.shape)
+        print()
         self.sample_z()
 
     def compute_kl_div(self):
