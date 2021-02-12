@@ -131,6 +131,7 @@ class SCLearner:
         lstm_r = lstm_r.reshape(-1, 1).squeeze(1)
         pi = lstm_out.reshape(-1, self.n_actions)
 
+        mask_dlstm = mask.repeat(1, 1, self.n_agents)[:, -self.args.horizon-1].view(-1)
         mask = mask.repeat(1, 1, self.n_agents).view(-1)
         pi_taken = torch.gather(pi, dim=1, index=actions.reshape(-1, 1)).squeeze(1)
         pi_taken[mask == 0] = 1.0
@@ -139,9 +140,9 @@ class SCLearner:
         # print("dlstm_loss_partial shape: {}".format(dlstm_loss_partial.shape))
 
         dlstm_loss_partial = dlstm_loss_partial.reshape(-1, 1).squeeze(1)
-        dlstm_loss_partial[mask == 0] = 0.0
+        dlstm_loss_partial[mask_dlstm == 0] = 0.0
 
-        dlstm_loss = ((dlstm_loss_partial * q_vals.detach()) * mask).sum() / mask.sum()
+        dlstm_loss = ((dlstm_loss_partial * q_vals.detach()) * mask_dlstm).sum() / mask_dlstm.sum()
         dlstm_loss += self.mac.compute_lat_state_kl_div()
         lstm_loss = ((log_pi_taken * lstm_r) * mask).sum() / mask.sum()
 
