@@ -27,7 +27,7 @@ critic_hidden_sizes: [256, 256]
 mixing_embed_dim: 32
 
 # for latent model
-name: "social_contact_latent_encoder"
+name: "social_contract_latent_encoder"
 
 agent: "sc"
 mac: "sc_mac"

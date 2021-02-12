@@ -93,7 +93,7 @@ def run_sequential(args, logger):
     #if args.obs_agent_id:
     #    args.own_feature_size+=args.n_agents
 
-    if "social_contact" in args.name:
+    if "social_contract" in args.name:
         scheme = {
             "state": {"vshape": env_info["state_shape"]},
             "obs": {"vshape": env_info["obs_shape"], "group": "agents"},
