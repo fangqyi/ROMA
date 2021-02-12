@@ -40,8 +40,6 @@ class SCMAC():
     def init_goals(self, batch_size):
         """
         must call before running an episode, self.goals = [timestep 0: [agent_id][batch_id][rule_dim], ...]
-        Args:
-            ep_batch:
         """
         goal_init = [torch.zeros([batch_size, self.rule_size])] * self.n_agents
         goal_init = torch.stack(goal_init, dim=0)  # [n_agent][batch_num][rule_dim]
@@ -97,7 +95,7 @@ class SCMAC():
         local_outs, horizon_outs = agent_outs
 
         # agent actions
-        if self.agent_local_output_type == "pi_logits":
+        if self.agent_output_type == "pi_logits":
             if getattr(self.args, "mask_before_softmax", True):
                 # Make the logits for unavailable actions very negative to minimize their affect on the softmax
                 reshaped_avail_actions = avail_actions.reshape(ep_batch.batch_size * self.n_agents, -1)
