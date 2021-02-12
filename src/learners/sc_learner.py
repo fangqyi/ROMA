@@ -146,7 +146,7 @@ class SCLearner:
         lstm_loss = ((log_pi_taken * lstm_r) * mask).sum() / mask.sum()
 
         self.control_actor_optimiser.zero_grad()
-        dlstm_loss.backward()
+        dlstm_loss.backward(retain_graph=True)
         dlstm_grad_norm = torch.nn.utils.clip_grad_norm_(self.control_actor_params, self.args.grad_norm_clip)
         self.control_actor_optimiser.step()
 
@@ -255,7 +255,7 @@ class SCLearner:
             td_loss = (td_loss**2).sum()
 
             self.control_critic_optimiser.zero_grad()
-            td_loss.backward()
+            td_loss.backward(retain_graph=True)
             grad_norm = torch.nn.utils.clip_grad_norm_(self.control_critic_params, self.args.grad_norm_clip)
             self.control_critic_optimiser.step()
 
@@ -295,7 +295,7 @@ class SCLearner:
             td_loss = (td_loss ** 2).sum()
 
             self.execution_critic_optimiser.zero_grad()
-            td_loss.backward()
+            td_loss.backward(retain_graph=True)
             grad_norm = torch.nn.utils.clip_grad_norm_(self.control_critic_params, self.args.grad_norm_clip)
             self.execution_critic_optimiser.step()
 
