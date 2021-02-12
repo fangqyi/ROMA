@@ -10,7 +10,7 @@ class SCMAC():
         self.args = args
         input_shapes = self._get_input_shapes(scheme)
         output_shapes = self._get_output_shapes(scheme)
-        self._build_agents(input_shapes, output_shapes)
+        self._build_agents(input_shapes, output_shapes, args)
         self.agent_local_output_type = args.agent_local_output_type
         self.action_selector = action_REGISTRY[args.action_selector](args)
         self.comm_size = self.args.communication_query_and_signature_size
@@ -179,8 +179,8 @@ class SCMAC():
         self.latent_state_encoder.load_state_dict(
             torch.load("{}/state_encoder.th".format(path), map_location=lambda storage, loc: storage))
 
-    def _build_agents(self, input_shapes, output_shapes):
-        self.agent = agent_REGISTRY[self.args.agent](input_shapes, output_shapes)
+    def _build_agents(self, input_shapes, output_shapes, args):
+        self.agent = agent_REGISTRY[self.args.agent](input_shapes, output_shapes, args)
 
     def _build_inputs(self, batch, t):  # FIXME: consider execution modules need to take goal signals in inputs
         # control: last_action(opt) + obs + latent_state(opt) + agent_id(opt)
