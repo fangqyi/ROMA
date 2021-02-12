@@ -190,7 +190,7 @@ class SCLearner:
         dir_vals_tc = dirs_vals[:, t+self.args.horizon]
         query = queries[:, t]
         key = keys[:, t]
-        rule = keys[:, t]
+        rule = rules[:, t]
 
         dlstm_partial = []
         for i in range(self.n_agents):
