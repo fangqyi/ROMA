@@ -84,7 +84,7 @@ class SCLearner:
 
         mask = mask.repeat(1, 1, self.n_agents).view(-1)
 
-        dirs_vals, execution_critic_train_stats = self._train_execution_critic(batch)  
+        dirs_vals, execution_critic_train_stats = self._train_execution_critic(batch, terminated)
         # [bs, seq_len, n_agents, latent_state_dim]
         q_vals, control_critic_train_stats = self._train_control_critic(batch, rewards, terminated, actions)
         # [bs, seq_len, n_agents]
