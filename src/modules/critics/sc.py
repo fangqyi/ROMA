@@ -10,7 +10,7 @@ class SCExecutionCritic(nn.Module):  # FIXME: Normalization across directional d
         super(SCExecutionCritic, self).__init__()
 
         self.args = args
-        self.n_actions = args.n_action
+        self.n_actions = args.n_actions
         self.n_agents = args.n_agents
 
         input_shape = self._get_input_shape(scheme)
