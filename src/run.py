@@ -101,9 +101,9 @@ def run_sequential(args, logger):
             "avail_actions": {"vshape": (env_info["n_actions"],), "group": "agents", "dtype": th.int},
             "reward": {"vshape": (1,)},
             "terminated": {"vshape": (1,), "dtype": th.uint8},
-            "queries": {"vshape": args.communication_query_and_signature_size, "dtype": th.float},
-            "keys": {"vshape": args.communication_query_and_signature_size, "dtype": th.float},
-            "rules": {"vshape": args.latent_state_dim, "dtype": th.float},
+            "queries": {"vshape": args.communication_query_and_signature_size, "dtype": th.float, "group": "agents"},
+            "keys": {"vshape": args.communication_query_and_signature_size, "dtype": th.float, "group": "agents"},
+            "rules": {"vshape": args.latent_state_dim, "dtype": th.float, "group": "agents"},
             "latent_state": {"vshape": args.latent_state_dim, "dtype": th.float},
             "latent_state_kl_div": {"vshape": (1,), "dtype": th.float},
         }
