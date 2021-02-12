@@ -27,7 +27,7 @@ class SCAgent(nn.Module):  # FIXME: Does SCAgent need to extend nn.Module
 
         w_goals = self.g_lin_trans(goals)
         # linear projection in wt=φ(t∑i=t−c gi) eq. 4 in Feudal Net, goals = t∑i=t−c gi
-        lstm_outs = self.F.softmax(torch.mul(w_goals, lstm_outs), dim=-1)
+        lstm_outs = F.softmax(torch.mul(w_goals, lstm_outs), dim=-1)
         # πt=SoftMax(Ut*wt) eq. 6 in Feudal Net
 
         return (lstm_outs, dlstm_outs), (lstm_hidden_state, dlstm_hidden_state)
