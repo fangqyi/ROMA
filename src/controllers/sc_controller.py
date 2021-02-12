@@ -238,9 +238,9 @@ class SCMAC():
             lstm_input_shape += scheme["actions_onehot"]["vshape"][0]
             dlstm_input_shape += (scheme["keys"]["vshape"] * 2 + scheme["latent_state"][
                 "vshape"])  # key_size + query_size + rule_size
-        if self.args.obs_other_hidden_state:
-            lstm_input_shape += lstm_input_shape + self.args.dilated_lstm_hidden_dim
-            dlstm_input_shape += dlstm_input_shape + self.args.lstm_hidden_dim
+        # if self.args.obs_other_hidden_state:  # FIXME: implement other hidden state as input
+        #     lstm_input_shape += self.args.dilated_lstm_hidden_dim
+        #     dlstm_input_shape += self.args.lstm_hidden_dim
 
         return lstm_input_shape, dlstm_input_shape
 
