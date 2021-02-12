@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 
-from utils.utils import identity, fanin_init, product_of_gaussians, zeros, ones, LayerNorm
+from utils.utils import identity, fanin_init, product_of_gaussians, LayerNorm
 
 
 class MLPMultiGaussianEncoder(nn.Module):
@@ -65,7 +65,7 @@ class MLPMultiGaussianEncoder(nn.Module):
         self.sample_z()
 
     def compute_kl_div(self):
-        prior = torch.distributions.Normal(zeros(self.output_size), ones(self.output_size))
+        prior = torch.distributions.Normal(torch.zeros(self.output_size), torch.ones(self.output_size))
         posteriors = [torch.distributions.Normal(mu, torch.sqrt(var)) for mu, var in
                       zip(torch.unbind(self.z_means), torch.unbind(self.z_vars))]
         kl_divs = [torch.distributions.kl.kl_divergence(post, prior) for post in posteriors]
