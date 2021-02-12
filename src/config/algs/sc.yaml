@@ -23,7 +23,7 @@ execution_mixer: "qmix"
 instr_r_rate: 0.8
 latent_state_encoder_class: "multi_gaussian_encoder"
 latent_state_encoder_hidden_sizes: [256, 256]
-critic_hidden_sizes: [256, 256]
+critic_hidden_sizes: [128, 128]
 mixing_embed_dim: 32
 
 # for latent model
