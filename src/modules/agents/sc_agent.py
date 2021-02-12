@@ -32,6 +32,9 @@ class SCAgent(nn.Module):  # FIXME: Does SCAgent need to extend nn.Module
 
         return (lstm_outs, dlstm_outs), (lstm_hidden_state, dlstm_hidden_state)
 
+    def parameters(self):
+        return list(self.LSTM_agent.parameters()) + list(self.dLSTM_agent.parameters())
+
     def lstm_parameters(self):
         return self.LSTM_agent.parameters()
 

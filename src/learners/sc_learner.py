@@ -40,7 +40,6 @@ class SCLearner:
                 self.control_mixer = QMixer(args)
             else:
                 raise ValueError("Mixer {} not recognised.".format(args.control_mixer))
-            self.params += self.control_mixer.parameters()
             self.target_control_mixer = copy.deepcopy(self.control_mixer)
             self.control_critic_params += list(self.control_mixer.parameters())
 
@@ -52,12 +51,9 @@ class SCLearner:
                 self.execution_mixer = QMixer(args)
             else:
                 raise ValueError("Mixer {} not recognised.".format(args.execution_mixer))
-            self.params += self.execution_mixer.parameters()
             self.target_execution_mixer = copy.deepcopy(self.execution_mixer)
             self.execution_critic_params += list(self.execution_mixer.parameters())     
 
-        self.params = self.control_critic_params + self.execution_critic_params + self.control_actor_params + self.execution_actor_params
-        
         self.control_actor_optimiser = RMSprop(params=self.control_actor_params, lr=args.control_actor_lr, alpha=args.optim_alpha, eps=args.optim_eps)
         self.control_critic_optimiser = RMSprop(params=self.control_critic_params, lr=args.control_critic_lr, alpha=args.optim_alpha, eps=args.optim_eps)
         self.execution_actor_optimiser = RMSprop(params=self.execution_actor_params, lr=args.execution_actor_lr, alpha=args.optim_alpha, eps=args.optim_eps)

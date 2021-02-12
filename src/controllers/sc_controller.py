@@ -151,7 +151,7 @@ class SCMAC():
         self.agent_hidden_states = self.agent.init_hidden(batch_size)
 
     def parameters(self):
-        return self.agent.parameters() + self.latent_state_encoder.parameters()  # assume the check is recursive
+        return list(self.agent.parameters()) + list(self.latent_state_encoder.parameters())  # assume the check is recursive
 
     def agent_lstm_parameters(self):
         return self.agent.lstm_parameters()
