@@ -46,7 +46,7 @@ class SCExecutionCritic(nn.Module):  # FIXME: Normalization across directional d
         inputs = []
 
         # latent_state
-        latent_state = copy.deepcopy(batch["latent_state"])[:, ts].repeat(1, self.n_agents, 1)  # [bs, n_agents, lat_state_size]
+        latent_state = batch["latent_state"][:, ts].repeat(1, self.n_agents, 1)  # [bs, n_agents, lat_state_size]
         inputs.append(latent_state)
 
         # local_observations
@@ -115,7 +115,7 @@ class SCControlCritic(nn.Module):
         inputs = []
 
         # latent_state
-        latent_state = copy.deepcopy(batch["latent_state"])[:, ts].repeat(1, self.n_agents, 1)  # [bs, n_agents, lat_state_size]
+        latent_state = batch["latent_state"][:, ts].repeat(1, self.n_agents, 1)  # [bs, n_agents, lat_state_size]
         inputs.append(latent_state)
 
         # local_observations
