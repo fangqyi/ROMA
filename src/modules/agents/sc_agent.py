@@ -53,7 +53,7 @@ class DilatedLSTMAgent(nn.Module):
 
     def init_hidden(self, batch_size):
         h0 = [torch.zeros(batch_size, self.dlstm.hidden_size, requires_grad=self.args.is_training) for _ in
-              range(self.horizon)]
+              range(self.args.horizon)]
         tick = 0
         return tick, h0
 
