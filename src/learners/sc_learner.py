@@ -82,7 +82,7 @@ class SCLearner:
         mask[:, 1:] = mask[:, 1:] * (1 - terminated[:, :-1])
         avail_actions = batch["avail_actions"][:, :-1]
 
-        mask = mask.repeat(1, 1, self.n_agents).view(-1)
+        #mask = mask.repeat(1, 1, self.n_agents).view(-1)
 
         dirs_vals, execution_critic_train_stats = self._train_execution_critic(batch, terminated, mask)
         # [bs, seq_len, n_agents, latent_state_dim]
