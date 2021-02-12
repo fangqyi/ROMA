@@ -130,7 +130,7 @@ class SCLearner:
         lstm_r = lstm_r.reshape(-1, 1)
 
         mask = mask.repeat(1, 1, self.n_agents).view(-1)
-        pi_taken = torch.gather(lstm_out, dim=2, index=actions.reshape(bs, -1, 1)).squeeze(2)
+        pi_taken = torch.gather(lstm_out, dim=2, index=actions.reshape(bs, -1, 1).squeeze(2))
         pi_taken[mask == 0] = 1.0
         pi_taken = torch.prod(pi_taken, dim=1).squeeze(1)
         log_pi_taken = torch.log(pi_taken)
