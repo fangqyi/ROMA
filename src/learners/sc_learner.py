@@ -179,7 +179,7 @@ class SCLearner:
             # calculate the cosine similarity between agent's estimated contribution and its goal
             r += F.cosine_similarity(dec_lat_states, goals, dim=2)
             # penalize if agent has no goal
-            r -= self.args.cum_goal_zeros_penalty_rate * F.cosine_similarity(torch.zeros(goals.shape), goals)
+            r -= self.args.cum_goal_zeros_penalty_rate * F.cosine_similarity(torch.zeros(goals.shape), goals, dim=2)
         return r/self.args.horizon # [bs][n_agents]
 
     def _get_dlistm_partial(self, dirs_vals, queries, keys, rules, t):
