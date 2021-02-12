@@ -5,7 +5,8 @@ import copy
 
 from utils.utils import identity, fanin_init, LayerNorm, product_of_gaussians, zeros, ones
 
-from modules.utils.components import MLP
+
+from modules.utils.mlp_module import MLPModule
 
 
 class SCExecutionCritic(nn.Module):  # FIXME: Normalization across directional dims
@@ -20,17 +21,10 @@ class SCExecutionCritic(nn.Module):  # FIXME: Normalization across directional d
         output_shape = self.args.latent_state_dim
         self.output_type = "dir"
 
-        self.critic = MLP(
+        self.critic = MLPModule(
+            input_dim=input_shape,
+            output_dim=output_shape,
             hidden_sizes=args.critic_hidden_sizes,
-            input_size=input_shape,
-            output_size=output_shape,
-            init_w=3e-3,
-            hidden_activation=F.relu,
-            output_activation=identity,
-            hidden_init=fanin_init,
-            b_init_value=0.1,
-            layer_norm=False,
-            layer_norm_params=None,
         )
 
     def forward(self, batch, t):
@@ -88,17 +82,10 @@ class SCControlCritic(nn.Module):
         output_shape = 1
         self.output_type = "q"
 
-        self.critic = MLP(
+        self.critic = MLPModule(
+            input_dim=input_shape,
+            output_dim=output_shape,
             hidden_sizes=args.critic_hidden_sizes,
-            input_size=input_shape,
-            output_size=output_shape,
-            init_w=3e-3,
-            hidden_activation=F.relu,
-            output_activation=identity,
-            hidden_init=fanin_init,
-            b_init_value=0.1,
-            layer_norm=False,
-            layer_norm_params=None,
         )
 
     def forward(self, batch, t):
