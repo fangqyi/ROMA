@@ -218,9 +218,7 @@ class SCLearner:
 
             dlstm_partial_i = [torch.einsum("i,ij->ij", 1/a_i[:, j], p_diff[:, j]) for j in range(self.n_agents)]
             dlstm_partial_i = torch.stack(dlstm_partial_i, dim=1).sum(dim=1)  # [bs, latent_state_dim]
-            print("dlstm_partial_i shape: {}".format(dlstm_partial_i.shape))
-            print("rules[:, i] shape: {}".format(rules[:, i].shape))
-            dlstm_partial_i = F.cosine_similarity(dlstm_partial_i, rules[:, i], dim=1)
+            dlstm_partial_i = F.cosine_similarity(dlstm_partial_i, rule[:, i], dim=1)
 
             dlstm_partial.append(dlstm_partial_i)
 
