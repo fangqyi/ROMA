@@ -22,6 +22,7 @@ execution_mixer: "qmix"
 # rate for intrinsic rewards
 instr_r_rate: 0.8
 latent_state_encoder_class: "multi_gaussian_encoder"
+latent_state_encoder_hidden_sizes: [256, 256]
 
 # for latent model
 name: "social_contact_latent_encoder"
