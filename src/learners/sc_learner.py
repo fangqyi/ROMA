@@ -130,7 +130,7 @@ class SCLearner:
         lstm_r = lstm_r.reshape(-1, 1).squeeze(1)
         pi = lstm_out.reshape(-1, self.n_actions)
 
-        mask_dlstm = mask.repeat(1, 1, self.n_agents)[:, :-self.args.horizon - 1].reshape(-1, 1).squeeze(1)
+        mask_dlstm = mask.repeat(1, 1, self.n_agents)[:, :-self.args.horizon].reshape(-1, 1).squeeze(1)
         mask = mask.repeat(1, 1, self.n_agents).view(-1)
         # print("mask_dlstm shape:{}".format(mask_dlstm.shape))
 
