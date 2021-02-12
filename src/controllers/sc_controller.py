@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from components.action_selectors import REGISTRY as action_REGISTRY
 from modules.agents import REGISTRY as agent_REGISTRY
-
+from modules.utils import REGISTRY as utils_REGISTRY
 
 class SCMAC():
     def __init__(self, scheme, groups, args):
@@ -18,7 +18,7 @@ class SCMAC():
         self.agent_hidden_states = None
         self.goals = []
         self.cur_dec_state = None
-        self.latent_state_encoder = args.latent_state_encoder_class(
+        self.latent_state_encoder = utils_REGISTRY[args.latent_state_encoder_class](
             input_size=scheme["state"]["vshape"],
             output_size=self.args.laten_state_dim,
             mlp_hidden_sizes=args.latent_state_encoder_hidden_sizes)
