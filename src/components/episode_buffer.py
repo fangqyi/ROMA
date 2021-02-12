@@ -102,6 +102,7 @@ class EpisodeBatch:
             dtype = self.scheme[k].get("dtype", th.float32)
             print(k)
             print(dtype)
+            print(v)
             v = th.tensor(v, dtype=dtype, device=self.device)
             self._check_safe_view(v, target[k][_slices])
             target[k][_slices] = v.view_as(target[k][_slices])
