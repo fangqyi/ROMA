@@ -206,8 +206,8 @@ class SCMAC():
         dlstm_inputs.append(batch["obs"][:, t])
 
         if self.args.obs_latent_state:
-            lstm_inputs.append(batch["latent_state"][:, t])
-            dlstm_inputs.append(batch["latent_state"][:, t])
+            lstm_inputs.append(batch["latent_state"][:, t].unsqueeze(1).repeat(1, self.n_agents, 1))
+            dlstm_inputs.append(batch["latent_state"][:, t].unsqueeze(1).repeat(1, self.n_agents, 1))
 
         if self.args.obs_agent_id:
             lstm_inputs.append(torch.eye(self.n_agents, device=batch.device).unsqueeze(0).expand(bs, -1, -1))
