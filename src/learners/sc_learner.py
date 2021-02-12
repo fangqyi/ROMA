@@ -185,6 +185,7 @@ class SCLearner:
     def _get_dlistm_partial(self, dirs_vals, queries, keys, rules, t):
         # calculate dcos(zt+c−zt,gt(θ)) in multi-agent context
 
+        print("dirs_vals shape: {}".format(dirs_vals.shape))
         dir_vals_t = dirs_vals[:, t]
         dir_vals_tc = dir_vals_t[:, t+self.args.horizon]
         query = queries[:, t]
