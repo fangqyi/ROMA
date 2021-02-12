@@ -43,7 +43,7 @@ class SCMAC():
         must call before running an episode, self.goals = [timestep 0: [agent_id][batch_id][rule_dim], ...]
         """
         goal_init = [torch.zeros([batch_size, self.rule_size])] * self.n_agents
-        goal_init = torch.stack(goal_init, dim=0)  # [n_agent][batch_num][rule_dim]
+        goal_init = torch.stack(goal_init, dim=1)  # [batch_num][n_agent][rule_dim]
         self.goals = [goal_init]
 
     def infer_latent_state(self, state):
