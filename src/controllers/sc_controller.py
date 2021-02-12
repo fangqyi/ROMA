@@ -200,14 +200,9 @@ class SCMAC():
         if self.args.obs_last_action:
             if t == 0:
                 lstm_inputs.append(torch.zeros_like(batch["actions_onehot"][:, t]))
-                dlstm_inputs.append(torch.zeros(bs, self.n_agents, self.args.communication_query_and_signature_size))
-                dlstm_inputs.append(torch.zeros(bs, self.n_agents, self.args.communication_query_and_signature_size))
-                dlstm_inputs.append(torch.zeros(bs, self.n_agents, self.args.latent_state_dim))
-                print("keys, queries, rules shape in build inputs:")
-                print(batch["keys"][:, t].shape)
-                print(batch["queries"][:, t].shape)
-                print(batch["rules"][:, t].shape)
-                print()
+                dlstm_inputs.append(torch.zeros_like(batch["keys"][:, t].shape))
+                dlstm_inputs.append(torch.zeros_like(batch["queries"][:, t].shape))
+                dlstm_inputs.append(torch.zeros_like(batch["rules"][:, t].shape))
             else:
                 lstm_inputs.append(batch["actions_onehot"][:, t - 1])
                 dlstm_inputs.append(batch["keys"][:, t - 1])

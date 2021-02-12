@@ -52,7 +52,7 @@ class DilatedLSTMAgent(nn.Module):
         self.fc2 = nn.Linear(args.dilated_lstm_hidden_dim, output_shape)
 
     def init_hidden(self, batch_size):
-        h0 = [torch.zeros(batch_size, self.dlstm.hidden_size) for _ in range(self.args.horizon)]  # FIXEME: require_grad = is_training
+        h0 = [(torch.zeros(batch_size, self.dlstm.hidden_size), torch.zeros(batch_size, self.dlstm.hidden_size)) for _ in range(self.args.horizon)]  # FIXEME: require_grad = is_training
         tick = 0
         return tick, h0
 
@@ -60,7 +60,7 @@ class DilatedLSTMAgent(nn.Module):
         x = F.relu(self.fc1(inputs))
         tick, hx = hidden_state
         hx[tick] = self.dlstm(x, hx[tick])
-        outs = self.fc2(hx[tick])
+        outs = self.fc2(hx[tick][0])
         tick = (tick + 1) % self.args.horizon
         return outs, (tick, hx)
 
@@ -75,11 +75,13 @@ class LSTMAgent(nn.Module):
 
     def init_hidden(self, batch_size):
         # make hidden states on same device as model
-        return self.fc1.weight.new(batch_size, self.args.lstm_hidden_dim).zero_()
+        return (self.fc1.weight.new(batch_size, self.args.lstm_hidden_dim).zero_(),
+                self.fc1.weight.new(batch_size, self.args.lstm_hidden_dim).zero_())
 
     def forward(self, inputs, hidden_state):
         x = F.relu(self.fc1(inputs))
-        h_in = hidden_state.reshape(-1, self.args.lstm_hidden_dim)
+        h_in = (hidden_state[0].reshape(-1, self.args.lstm_hidden_dim),
+                hidden_state[1].reshape(-1, self.args.lstm_hidden_dim))
         h = self.lstm(x, h_in)
-        q = self.fc2(h)
+        q = self.fc2(h[0])
         return q, h
