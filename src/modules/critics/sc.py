@@ -83,7 +83,7 @@ class SCControlCritic(nn.Module):
         self.n_agents = args.n_agents
 
         input_shape = self._get_input_shape(scheme)
-        print("sc control critic input shape:{}".format(input_shape))
+        # print("sc control critic input shape:{}".format(input_shape))
         output_shape = 1
         self.output_type = "q"
 
@@ -103,7 +103,7 @@ class SCControlCritic(nn.Module):
     def forward(self, batch, t):
         inputs = self._build_inputs(batch, t)
         bs = batch.batch_size
-        print("sc control critic actual input:{}".format(inputs.shape))
+        # print("sc control critic actual input:{}".format(inputs.shape))
         return self.critic(inputs).reshape(bs, self.n_agents)
 
     def _build_inputs(self, batch, t):
@@ -150,8 +150,8 @@ class SCControlCritic(nn.Module):
         return inputs
 
     def _get_input_shape(self, scheme):
-        return scheme["latent_state"]["vshape"]*2 + self.args.communication_query_and_signature_size * 2 + scheme["obs"][
-            "vshape"] + self.n_agents
+        return scheme["latent_state"]["vshape"] + (scheme["latent_state"]["vshape"] + self.args.communication_query_and_signature_size * 2) *2 \
+               + scheme["obs"]["vshape"] + self.n_agents
 
 
 
