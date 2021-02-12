@@ -128,7 +128,7 @@ class SCLearner:
         q_vals = q_vals[:, :-self.args.horizon]
         q_vals = q_vals.reshape(-1, 1)
         lstm_r = lstm_r.reshape(-1, 1)
-        pi = lstm_out.reshape(-1, 1)
+        pi = lstm_out.reshape(-1, self.n_actions)
 
         mask = mask.repeat(1, 1, self.n_agents).view(-1)
         print("pi shape: {}".format(pi.shape))
