@@ -56,7 +56,7 @@ class SCMAC():
         Returns:
 
         """
-        return self.latent_state_encoder(state)
+        return self.latent_state_encoder.infer_posterior(state)
 
     def get_cumulative_goal(self):
         """
