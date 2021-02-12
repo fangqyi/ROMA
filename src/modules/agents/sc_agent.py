@@ -7,8 +7,8 @@ class SCAgent(nn.Module):  # FIXME: Does SCAgent need to extend nn.Module
     def __init__(self, input_shapes, output_shapes, args):
         super(SCAgent, self).__init__()
         self.args = args
-        lstm_input_shape, dlstm_input_shape, dec_latent_state_input_shape = input_shapes
-        lstm_output_shape, dlstm_output_shape, dec_latent_state_output_shape = output_shapes
+        lstm_input_shape, dlstm_input_shape = input_shapes
+        lstm_output_shape, dlstm_output_shape = output_shapes
         self.LSTM_agent = LSTMAgent(lstm_input_shape, lstm_output_shape, args)
         self.dLSTM_agent = DilatedLSTMAgent(dlstm_input_shape, dlstm_output_shape, args)
         self.g_lin_trans = nn.Linear(self.args.goal_dim, self.args.n_actions, bias=False)
