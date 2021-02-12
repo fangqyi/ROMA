@@ -232,7 +232,7 @@ class SCLearner:
 
     def _train_control_critic(self, batch, rewards, terminated, mask):  # FIXME: terminated?
         bs = batch.batch_size
-        qs_vals = torch.zeros(bs, batch["reward"].shape[1], self.n_agents)
+        qs_vals = []
 
         running_log = {
             "control_critic_td_loss": [],
@@ -246,9 +246,8 @@ class SCLearner:
                 continue
 
             qs_t = self.control_critic(batch, t)  # [bs, n_agents]
+            qs_vals.append(qs_t.clone())  # [bs_size][t][lat_dim]
             qs_tot = self.control_mixer(qs_t.unsqueeze(1), batch["latent_state"][:, t].unsqueeze(1))
-            qs_vals[:, t] = qs_t
-            # [bs_size][t][lat_dim]
             
             target_qs_t = self.target_control_critic(batch, t+1)
             target_qs_tot = self.target_control_mixer(target_qs_t.unsqueeze(1), batch["latent_state"][:, t+1].unsqueeze(1))  
@@ -264,11 +263,11 @@ class SCLearner:
             running_log["control_critic_td_loss"].append(td_loss.item())
             running_log["control_critic_grad_norm"].append(grad_norm)
         
-        return qs_vals, running_log
+        return torch.stack(qs_vals, dim=1), running_log
 
     def _train_execution_critic(self, batch, terminated, mask):
         bs = batch.batch_size
-        dirs_tot_vals = torch.zeros(bs, batch["reward"].shape[1], self.n_agents, self.args.latent_state_dim)
+        dirs_tot_vals = []
 
         running_log = {
             "execution_critic_td_loss": [],
@@ -286,10 +285,9 @@ class SCLearner:
             # [bs_size, latent_state_dim]
 
             dirs_t = self.execution_critic(batch, t)  # [bs, n_agents, latent_state_dim]
-            dirs_tot = self.execution_mixer(dirs_t.unsqueeze(1), batch["latent_state"][:, t].unsqueeze(1))  
-            dirs_tot_vals[:, t] = dirs_t
-            # [bs_size][t][lat_dim]
-            
+            dirs_tot_vals.append(dirs_t.clone())  # # [bs_size][t][lat_dim]
+            dirs_tot = self.execution_mixer(dirs_t.unsqueeze(1), batch["latent_state"][:, t].unsqueeze(1))
+
             target_dirs_t = self.target_execution_critic(batch, t+1)
             target_dirs_tot = self.target_execution_mixer(target_dirs_t.unsqueeze(1), batch["latent_state"][:, t+1].unsqueeze(1))  
 
@@ -304,7 +302,7 @@ class SCLearner:
             running_log["execution_critic_td_loss"].append(td_loss.item())
             running_log["execution_critic_grad_norm"].append(grad_norm)
         
-        return dirs_tot_vals, running_log
+        return torch.stack(dirs_tot_vals, dim=1), running_log
 
     def _update_targets(self):
         self.target_control_critic.load_state_dict(self.control_critic.state_dict())
