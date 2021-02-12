@@ -115,7 +115,7 @@ class SCLearner:
         lstm_r = torch.stack(lstm_r, dim=1)
 
         dlstm_loss_partial = []
-        for t in range(batch["reward"].shape[1] - self.args.horizon):  # FIXEME: can implement slice instead of t iterations
+        for t in range(batch["reward"].shape[1] - self.args.horizon-1):  # FIXEME: can implement slice instead of t iterations
             dlstm_loss_partial_t = self._get_dlistm_partial(dirs_vals, dlstm_query_out, dlstm_key_out, dlstm_rule_out,
                                                               t)
             dlstm_loss_partial.append(dlstm_loss_partial_t)
