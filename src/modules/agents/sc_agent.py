@@ -11,7 +11,7 @@ class SCAgent(nn.Module):  # FIXME: Does SCAgent need to extend nn.Module
         lstm_output_shape, dlstm_output_shape = output_shapes
         self.LSTM_agent = LSTMAgent(lstm_input_shape, lstm_output_shape, args)
         self.dLSTM_agent = DilatedLSTMAgent(dlstm_input_shape, dlstm_output_shape, args)
-        self.g_lin_trans = nn.Linear(self.args.goal_dim, self.args.n_actions, bias=False)
+        self.g_lin_trans = nn.Linear(self.args.latent_state_dim, self.args.n_actions, bias=False)
         # bias set to off in linear projection to avoid constant zero goal
 
     def init_hidden(self, batch_size):
