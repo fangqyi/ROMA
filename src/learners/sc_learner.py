@@ -14,7 +14,7 @@ from modules.mixers.qmix import DirMixer
 
 class SCLearner:
     def __init__(self, mac, scheme, logger, args):
-        torch.autograd.set_detect_anomaly(True)
+        # torch.autograd.set_detect_anomaly(True)
         self.args = args
         self.n_agents = args.n_agents
         self.n_actions = args.n_actions
@@ -127,7 +127,7 @@ class SCLearner:
         lstm_out[avail_actions == 0] = 0
 
         # FIXME: implement q baseline
-        q_vals = q_vals[:, :-self.args.horizon-1]
+        q_vals = q_vals[:, :-self.args.horizon]
         q_vals = q_vals.reshape(-1, 1).squeeze(1)
         lstm_r = lstm_r.reshape(-1, 1).squeeze(1)
         pi = lstm_out.reshape(-1, self.n_actions)
