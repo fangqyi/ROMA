@@ -46,13 +46,15 @@ class DilatedLSTMAgent(nn.Module):
     def __init__(self, input_shape, output_shape, args):
         super(DilatedLSTMAgent, self).__init__()
         self.args = args
+        self.n_agents = args.n_agents
 
         self.fc1 = nn.Linear(input_shape, args.dilated_lstm_hidden_dim)
         self.dlstm = nn.LSTMCell(args.dilated_lstm_hidden_dim, args.dilated_lstm_hidden_dim)
         self.fc2 = nn.Linear(args.dilated_lstm_hidden_dim, output_shape)
 
     def init_hidden(self, batch_size):
-        h0 = [(torch.zeros(batch_size, self.dlstm.hidden_size), torch.zeros(batch_size, self.dlstm.hidden_size)) for _ in range(self.args.horizon)]  # FIXEME: require_grad = is_training
+        h0 = [(torch.zeros(batch_size * self.n_agents, self.args.dilated_lstm_hidden_dim),
+               torch.zeros(batch_size * self.n_agents, self.args.dilated_lstm_hidden_dim)) for _ in range(self.args.horizon)]  # FIXEME: require_grad = is_training
         tick = 0
         return tick, h0
 
@@ -68,20 +70,21 @@ class LSTMAgent(nn.Module):
     def __init__(self, input_shape, output_shape, args):
         super(LSTMAgent, self).__init__()
         self.args = args
+        self.n_agents = args.n_agents
 
         self.fc1 = nn.Linear(input_shape, args.lstm_hidden_dim)
-        print("lstm fc1 input shape:{}".format(input_shape))
-        print("lstm fc1 output shape:{}".format(args.lstm_hidden_dim))
+        # print("lstm fc1 input shape:{}".format(input_shape))
+        # print("lstm fc1 output shape:{}".format(args.lstm_hidden_dim))
         self.lstm = nn.LSTMCell(args.lstm_hidden_dim, args.lstm_hidden_dim)
         self.fc2 = nn.Linear(args.lstm_hidden_dim, output_shape)
 
     def init_hidden(self, batch_size):
         # make hidden states on same device as model
-        return (self.fc1.weight.new(batch_size, self.args.lstm_hidden_dim).zero_(),
-                self.fc1.weight.new(batch_size, self.args.lstm_hidden_dim).zero_())
+        return (self.fc1.weight.new(batch_size * self.n_agents, self.args.lstm_hidden_dim).zero_(),
+                self.fc1.weight.new(batch_size * self.n_agents, self.args.lstm_hidden_dim).zero_())
 
     def forward(self, inputs, hidden_state):
-        print("lstm forward fc1 shape:{}".format(inputs.shape))
+        # print("lstm forward fc1 shape:{}".format(inputs.shape))
         x = F.relu(self.fc1(inputs))
         h_in = (hidden_state[0].reshape(-1, self.args.lstm_hidden_dim),
                 hidden_state[1].reshape(-1, self.args.lstm_hidden_dim))
