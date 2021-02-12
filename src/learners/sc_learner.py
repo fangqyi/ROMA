@@ -106,7 +106,7 @@ class SCLearner:
             dlstm_rule_out.append(dlstm_output[2])
             intr_r = self._get_instrinsic_r(dirs_vals, t)
             lstm_r.append(self.args.instr_r_rate * intr_r + q_vals[:, t])
-        lstm_out = torch.stack(lstm_out, dim=1)
+        lstm_out = torch.stack(lstm_out, dim=1)  # [batch_num][seq][n_agents][n_actions]
         dlstm_query_out = torch.stack(dlstm_query_out, dim=1)
         dlstm_key_out = torch.stack(dlstm_key_out, dim=1)
         dlstm_rule_out = torch.stack(dlstm_rule_out, dim=1)
@@ -120,7 +120,7 @@ class SCLearner:
         dlstm_loss_partial = torch.stack(dlstm_loss_partial, dim=1)  # [bs, seq_len-c, n_agents]
 
         # Mask out unavailable actions, renormalise (as in action selection)
-        lstm_out[avail_actions == 0] = 0
+        lstm_out[avail_actions == 0] = 0  # [batch_num][seq][n_agents][n_actions]
         lstm_out = lstm_out/lstm_out.sum(dim=-1, keepdim=True)
         lstm_out[avail_actions == 0] = 0
 
@@ -130,7 +130,7 @@ class SCLearner:
         lstm_r = lstm_r.reshape(-1, 1)
 
         mask = mask.repeat(1, 1, self.n_agents).view(-1)
-        pi_taken = torch.gather(lstm_out, dim=2, index=actions.reshape(bs, -1, 1).squeeze(2))
+        pi_taken = torch.gather(lstm_out, dim=1, index=actions.reshape(-1, 1)).squeeze(1)
         pi_taken[mask == 0] = 1.0
         pi_taken = torch.prod(pi_taken, dim=1).squeeze(1)
         log_pi_taken = torch.log(pi_taken)
