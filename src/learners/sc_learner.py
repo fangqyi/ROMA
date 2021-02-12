@@ -27,7 +27,7 @@ class SCLearner:
         self.target_control_critic = copy.deepcopy(self.control_critic)
         self.target_execution_critic = copy.deepcopy(self.execution_critic)
 
-        self.control_actor_params = list([self.mac.agent_dlstm_parameters(), self.mac.latent_state_encoder_parameters()])  # FIXME: is it correct?
+        self.control_actor_params = list(self.mac.agent_dlstm_parameters()) + list(self.mac.latent_state_encoder_parameters())
         self.execution_actor_params = list(self.mac.agent_lstm_parameters())
         self.control_critic_params = list(self.control_critic.parameters())
         self.execution_critic_params = list(self.execution_critic.parameters())

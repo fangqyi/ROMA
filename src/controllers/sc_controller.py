@@ -160,7 +160,7 @@ class SCMAC():
         return self.agent.dlstm_parameters()
 
     def latent_state_encoder_parameters(self):
-        return self.latent_state_encoder.parameters();
+        return self.latent_state_encoder.parameters()
 
     def load_state(self, other_mac):
         self.agent.load_state_dict(other_mac.agent.state_dict())
