@@ -126,18 +126,18 @@ class SCLearner:
 
         # FIXME: implement q baseline
         q_vals = q_vals[:, :-self.args.horizon]
+        print("q_vals shape: {}".format(q_vals.shape))
         q_vals = q_vals.reshape(-1, 1).squeeze(1)
         lstm_r = lstm_r.reshape(-1, 1).squeeze(1)
         pi = lstm_out.reshape(-1, self.n_actions)
 
         mask = mask.repeat(1, 1, self.n_agents).view(-1)
-        # print("pi shape: {}".format(pi.shape))
-        # print("actions shape: {}".format(actions.reshape(-1, 1).shape))
-        # print("after {}:".format(torch.gather(pi, dim=1, index=actions.reshape(-1, 1)).shape))
         pi_taken = torch.gather(pi, dim=1, index=actions.reshape(-1, 1)).squeeze(1)
         pi_taken[mask == 0] = 1.0
         # pi_taken = torch.prod(pi_taken, dim=1).squeeze(1)
         log_pi_taken = torch.log(pi_taken)
+        print("dlstm_loss_partial shape: {}".format(dlstm_loss_partial))
+
         dlstm_loss_partial = dlstm_loss_partial.reshape(-1, 1).squeeze(1)
 
         dlstm_loss = ((dlstm_loss_partial * q_vals.detach()) * mask).sum() / mask.sum()
