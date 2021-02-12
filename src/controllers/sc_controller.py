@@ -200,9 +200,9 @@ class SCMAC():
         if self.args.obs_last_action:
             if t == 0:
                 lstm_inputs.append(torch.zeros_like(batch["actions_onehot"][:, t]))
-                dlstm_inputs.append(torch.zeros_like(batch["keys"][:, t].shape))
-                dlstm_inputs.append(torch.zeros_like(batch["queries"][:, t].shape))
-                dlstm_inputs.append(torch.zeros_like(batch["rules"][:, t].shape))
+                dlstm_inputs.append(torch.zeros_like(batch["keys"][:, t]))
+                dlstm_inputs.append(torch.zeros_like(batch["queries"][:, t]))
+                dlstm_inputs.append(torch.zeros_like(batch["rules"][:, t]))
             else:
                 lstm_inputs.append(batch["actions_onehot"][:, t - 1])
                 dlstm_inputs.append(batch["keys"][:, t - 1])
