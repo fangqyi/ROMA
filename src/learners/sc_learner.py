@@ -209,7 +209,7 @@ class SCLearner:
             p_diff = p_t - p_tc   # [bs, n_agents, latent_state_dim]
 
             qk_i = [torch.einsum('ij,ij->i', query[:, i], key[:, j])  # 2d torch.dot
-                    / torch.sqrt(self.args.attention_noramlization_dk) for j in range(self.n_agents)]
+                    / self.args.attention_noramlization_squared_dk for j in range(self.n_agents)]
             qk_i_t = torch.stack(qk_i, dim=1)  # [bs, n_agents]
             a_i = torch.nn.functional.softmax(qk_i_t, dim=1)
             # eq 2 in TarMac  # FIXME: only save attention and use attention directly

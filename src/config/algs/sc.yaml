@@ -33,7 +33,7 @@ agent: "sc"
 mac: "sc_mac"
 
 use_lat_state_information_bottleneck: True
-attention_noramlization_dk: 1
+attention_noramlization_squared_dk: 1
 communication_query_and_signature_size: 16
 latent_state_dim: 32
 horizon: 30
