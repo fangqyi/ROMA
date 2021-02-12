@@ -219,7 +219,7 @@ class SCMAC():
         return lstm_inputs, dlstm_inputs
 
     def _get_input_shapes(self, scheme):
-        print(scheme)
+        # print(scheme)
         input_shape = scheme["obs"]["vshape"]
         if self.args.obs_agent_id:
             input_shape += self.n_agents

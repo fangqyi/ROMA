@@ -54,6 +54,7 @@ class SCLearner:
             self.target_execution_mixer = copy.deepcopy(self.execution_mixer)
             self.execution_critic_params += list(self.execution_mixer.parameters())     
 
+        print(self.control_actor_params)
         self.control_actor_optimiser = RMSprop(params=self.control_actor_params, lr=args.control_actor_lr, alpha=args.optim_alpha, eps=args.optim_eps)
         self.control_critic_optimiser = RMSprop(params=self.control_critic_params, lr=args.control_critic_lr, alpha=args.optim_alpha, eps=args.optim_eps)
         self.execution_actor_optimiser = RMSprop(params=self.execution_actor_params, lr=args.execution_actor_lr, alpha=args.optim_alpha, eps=args.optim_eps)
