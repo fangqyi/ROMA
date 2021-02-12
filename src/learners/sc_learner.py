@@ -131,7 +131,7 @@ class SCLearner:
         pi = lstm_out.reshape(-1, self.n_actions)
 
         mask = mask.repeat(1, 1, self.n_agents).view(-1)
-        mask_dlstm = mask.repeat(1, 1, self.n_agents)[:, -self.args.horizon - 1].reshape(-1, 1).squeeze(1)
+        mask_dlstm = mask.repeat(1, 1, self.n_agents)[:, :-self.args.horizon - 1].reshape(-1, 1).squeeze(1)
 
         pi_taken = torch.gather(pi, dim=1, index=actions.reshape(-1, 1)).squeeze(1)
         pi_taken[mask == 0] = 1.0
