@@ -8,8 +8,7 @@ import numpy as np
 from modules.critics.sc import SCControlCritic, SCExecutionCritic
 from modules.mixers.qmix import QMixer
 from modules.mixers.vdn import VDNMixer
-
-from src.modules.mixers.qmix import DirMixer
+from modules.mixers.qmix import DirMixer
 
 
 class SCLearner:
