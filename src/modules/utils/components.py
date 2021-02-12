@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 
-from src.utils.utils import identity, fanin_init, product_of_gaussians, zeros, ones, LayerNorm
+from utils.utils import identity, fanin_init, product_of_gaussians, zeros, ones, LayerNorm
 
 
 class MLPMultiGaussianEncoder(nn.Module):
