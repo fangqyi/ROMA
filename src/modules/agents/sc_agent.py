@@ -70,6 +70,8 @@ class LSTMAgent(nn.Module):
         self.args = args
 
         self.fc1 = nn.Linear(input_shape, args.lstm_hidden_dim)
+        print("lstm fc1 input shape:{}".format(input_shape))
+        print("lstm fc1 output shape:{}".format(args.lstm_hidden_dim))
         self.lstm = nn.LSTMCell(args.lstm_hidden_dim, args.lstm_hidden_dim)
         self.fc2 = nn.Linear(args.lstm_hidden_dim, output_shape)
 
@@ -79,6 +81,7 @@ class LSTMAgent(nn.Module):
                 self.fc1.weight.new(batch_size, self.args.lstm_hidden_dim).zero_())
 
     def forward(self, inputs, hidden_state):
+        print("lstm forward fc1 shape:{}".format(inputs))
         x = F.relu(self.fc1(inputs))
         h_in = (hidden_state[0].reshape(-1, self.args.lstm_hidden_dim),
                 hidden_state[1].reshape(-1, self.args.lstm_hidden_dim))
