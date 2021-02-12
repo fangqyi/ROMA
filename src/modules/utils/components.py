@@ -53,31 +53,13 @@ class MLPMultiGaussianEncoder(nn.Module):
 
     def forward(self, input):
         params = self.mlp(input)  #[batch_size, 2*output_size]
-        print("params shape")
-        print(params.shape)
-        print()
         if self.use_information_bottleneck:
-            mu = params[..., :self.output_size]
-            sigma_squared = F.softplus(params[..., self.output_size:])
-            print("mu and sigma shape")
-            print(mu.shape)
-            print(mu)
-            print(sigma_squared.shape)
-            print(sigma_squared)
-            print()
-            z_params = [product_of_gaussians(m, s) for m,s in zip(torch.unbind(mu), torch.unbind(sigma_squared))]
-            print("z_params")
-            print(z_params)
-            print()
-            self.z_means = torch.stack([p[0] for p in z_params])
-            self.z_vars = torch.stack([p[1] for p in z_params])
+            self.z_means = params[..., :self.output_size]
+            self.z_vars = F.softplus(params[..., self.output_size:])
+            # z_params = [product_of_gaussians(m, s) for m,s in zip(torch.unbind(mu), torch.unbind(sigma_squared))]
         else:
             self.z_means = torch.mean(params, dim=1)  # FIXME: doublecheck
             self.z_vars = None
-        print("z_means and z_vars shape")
-        print(self.z_means.shape)
-        print(self.z_vars.shape)
-        print()
         self.sample_z()
 
     def compute_kl_div(self):
