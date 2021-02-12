@@ -131,13 +131,13 @@ class SCMAC():
         goals_t = []
         for i in range(self.n_agents):
             qi = queries[:, i]  # [bs, comm_size]
-            qk_i = [torch.from_numpy(np.einsum('ij,ij->i', qi, keys[:, j])) / torch.sqrt(self.args.attention_noramlization_dk)
+            qk_i = [torch.einsum('ij,ij->i', qi, keys[:, j]) / torch.sqrt(self.args.attention_noramlization_dk)
                     for j in range(self.n_agents)] # 2d torch.dot
             qk_i_t = torch.stack(qk_i, dim=1)  # [bs, n_agents]
             a_i = torch.nn.functional.softmax(qk_i_t, dim=1)
             # eq 2 in TarMac
 
-            goals_a_i = [torch.from_numpy(np.einsum("i,ij->ij", a_i[:, j], rules_no_grad[:, j])) for j in range(self.n_agents)]
+            goals_a_i = [torch.einsum("i,ij->ij", a_i[:, j], rules_no_grad[:, j]) for j in range(self.n_agents)]
             goal_i = torch.stack(goals_a_i, dim=1).sum(dim=1)  # [bs, g_size]
             # eq 3 in TarMac
 

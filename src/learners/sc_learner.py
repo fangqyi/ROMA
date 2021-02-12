@@ -193,28 +193,28 @@ class SCLearner:
         dlstm_partial = []
         for i in range(self.n_agents):
             # calc decomposed latent's projection on rule at t
-            p_i = [torch.from_numpy(np.einsum('ij,ij->i', dir_vals_t[:, j], rule[:, i])) for j in range(self.n_agents)]
+            p_i = [torch.einsum('ij,ij->i', dir_vals_t[:, j], rule[:, i]) for j in range(self.n_agents)]
             # rule is already normalized
             p_i = torch.stack(p_i, dim=1)  # [bs, n_agents]
-            p_t = [torch.from_numpy(np.einsum('i,ij->ij', p_i[:, j], rule[:, i])) for j in range(self.n_agents)]
+            p_t = [torch.einsum('i,ij->ij', p_i[:, j], rule[:, i]) for j in range(self.n_agents)]
             p_t = torch.stack(p_t, dim=1)  # [bs, n_agents, latent_state_dim]
 
             # calc decomposed latent's projection on rule at t+c
-            p_i_c = [torch.from_numpy(np.einsum('ij,ij->i', dir_vals_tc[:, j], rule[:, i])) for j in range(self.n_agents)]
+            p_i_c = [torch.einsum('ij,ij->i', dir_vals_tc[:, j], rule[:, i]) for j in range(self.n_agents)]
             # rule is already normalized
             p_i_c = torch.stack(p_i_c, dim=1)  # [bs, n_agents]
-            p_tc = [torch.from_numpy(np.einsum('i,ij->ij', p_i_c[:, j], rule[:, i])) for j in range(self.n_agents)]
+            p_tc = [torch.einsum('i,ij->ij', p_i_c[:, j], rule[:, i]) for j in range(self.n_agents)]
             p_tc = torch.stack(p_tc, dim=1)  # [bs, n_agents, latent_state_dim]
 
             p_diff = p_t - p_tc   # [bs, n_agents, latent_state_dim]
 
-            qk_i = [torch.from_numpy(np.einsum('ij,ij->i', query[:, i], key[:, j]))  # 2d torch.dot
+            qk_i = [torch.einsum('ij,ij->i', query[:, i], key[:, j])  # 2d torch.dot
                     / torch.sqrt(self.args.attention_noramlization_dk) for j in range(self.n_agents)]
             qk_i_t = torch.stack(qk_i, dim=1)  # [bs, n_agents]
             a_i = torch.nn.functional.softmax(qk_i_t, dim=1)
             # eq 2 in TarMac  # FIXME: only save attention and use attention directly
 
-            dlstm_partial_i = [torch.from_numpy(np.einsum("i,ij->ij", 1/a_i[:, j], p_diff[:, j])) for j in range(self.n_agents)]
+            dlstm_partial_i = [torch.einsum("i,ij->ij", 1/a_i[:, j], p_diff[:, j]) for j in range(self.n_agents)]
             dlstm_partial_i = torch.stack(dlstm_partial_i, dim=1).sum(dim=1)  # [bs, latent_state_dim]
             dlstm_partial_i = F.cosine_similarity(dlstm_partial_i, rules[:, i], dim=1)
 
