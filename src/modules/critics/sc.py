@@ -4,6 +4,8 @@ import torch.nn as nn
 
 from utils.utils import identity, fanin_init, LayerNorm, product_of_gaussians, zeros, ones
 
+from modules.utils.components import MLP
+
 
 class SCExecutionCritic(nn.Module):  # FIXME: Normalization across directional dims
     def __init__(self, scheme, args):
@@ -17,7 +19,7 @@ class SCExecutionCritic(nn.Module):  # FIXME: Normalization across directional d
         output_shape = self.args.latent_state_dim
         self.output_type = "dir"
 
-        self.critic = args.critic_class(
+        self.critic = MLP(
             hidden_sizes=args.critic_hidden_sizes,
             input_size=input_shape,
             output_size=output_shape,
@@ -84,7 +86,7 @@ class SCControlCritic(nn.Module):
         output_shape = 1
         self.output_type = "q"
 
-        self.critic = args.critic_class(
+        self.critic = MLP(
             hidden_sizes=args.critic_hidden_sizes,
             input_size=input_shape,
             output_size=output_shape,
