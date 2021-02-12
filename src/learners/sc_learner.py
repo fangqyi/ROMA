@@ -246,9 +246,7 @@ class SCLearner:
             target_qs_tot = self.target_control_mixer(target_qs_t.unsqueeze(1), batch["latent_state"][:, t+1].unsqueeze(1))  
 
             td_loss = qs_tot - (rewards[:, t] + self.args.control_discount*target_qs_tot)
-            print("td_loss")
-            print(td_loss.item())
-            print()
+
 
             self.control_critic_optimiser.zero_grad()
             td_loss.backward()
@@ -284,7 +282,10 @@ class SCLearner:
             target_dirs_tot = self.target_execution_mixer(target_dirs_t.unsqueeze(1), batch["latent_state"][:, t+1].unsqueeze(1))  
 
             td_loss = dirs_tot - (lat_state_target_dis + self.args.execution_discount*target_dirs_tot)
-
+            print("td_loss")
+            print(td_loss.item())
+            print()
+            
             self.execution_critic_optimiser.zero_grad()
             td_loss.backward()
             grad_norm = torch.nn.utils.clip_grad_norm_(self.control_critic_params, self.args.grad_norm_clip)
