@@ -3,6 +3,7 @@ import copy
 import torch
 import torch.nn.functional as F
 from torch.optim import RMSprop
+import copy
 import numpy as np
 
 from modules.critics.sc import SCControlCritic, SCExecutionCritic
@@ -83,9 +84,9 @@ class SCLearner:
         mask[:, 1:] = mask[:, 1:] * (1 - terminated[:, :-1])
         avail_actions = batch["avail_actions"][:, :-1]
 
-        dirs_vals, execution_critic_train_stats = self._train_execution_critic(batch.clone(), terminated, mask)
+        dirs_vals, execution_critic_train_stats = self._train_execution_critic(copy.deepcopy(batch), terminated, mask)
         # [bs, seq_len, n_agents, latent_state_dim]
-        q_vals, control_critic_train_stats = self._train_control_critic(batch.clone(), rewards, terminated, mask)
+        q_vals, control_critic_train_stats = self._train_control_critic(copy.deepcopy(batch), rewards, terminated, mask)
         # [bs, seq_len, n_agents]
         self.critic_training_steps += 1
 
