@@ -14,7 +14,7 @@ from modules.mixers.qmix import DirMixer
 
 class SCLearner:
     def __init__(self, mac, scheme, logger, args):
-        # torch.autograd.set_detect_anomaly(True)
+        torch.autograd.set_detect_anomaly(True)
         self.args = args
         self.n_agents = args.n_agents
         self.n_actions = args.n_actions
