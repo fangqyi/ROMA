@@ -196,6 +196,11 @@ class SCMAC():
                 dlstm_inputs.append(torch.zeros_like(batch["keys"][:, t]))
                 dlstm_inputs.append(torch.zeros_like(batch["queries"][:, t]))
                 dlstm_inputs.append(torch.zeros_like(batch["rules"][:, t]))
+                print("keys, queries, rules shape:")
+                print(batch["keys"][:, t].shape)
+                print(batch["queries"][:, t].shape)
+                print(batch["rules"][:, t].shape)
+                print()
             else:
                 lstm_inputs.append(batch["actions_onehot"][:, t - 1])
                 dlstm_inputs.append(batch["keys"][:, t - 1])
