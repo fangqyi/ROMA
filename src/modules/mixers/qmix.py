@@ -10,7 +10,10 @@ class QMixer(nn.Module):
 
         self.args = args
         self.n_agents = args.n_agents
-        self.state_dim = int(np.prod(args.state_shape))
+        if "social_contract" in args.name:
+            self.state_dim = args.latent_state_dim
+        else:
+            self.state_dim = int(np.prod(args.state_shape))
 
         self.embed_dim = args.mixing_embed_dim
 
