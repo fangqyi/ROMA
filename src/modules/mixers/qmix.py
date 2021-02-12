@@ -81,14 +81,14 @@ class DirMixer(nn.Module):
         w1 = th.abs(self.hyper_w_1(latent_states))  # produce the 1st layer hidden weights for each agent from state : (bs, t, embed_dim * n)
         b1 = self.hyper_b_1(latent_states)  # produce state-dependent hidden bias : (bs, embed_dim*latent_state_dim)
         w1 = w1.view(-1, self.n_agents, self.embed_dim) # (bs*t, n, embed_dim)
-        b1 = b1.view(-1, args.latent_state_dim, self.embed_dim)  # (bs*t, latent_state_dim, embed_dim) | same for each batch?
+        b1 = b1.view(-1, self.args.latent_state_dim, self.embed_dim)  # (bs*t, latent_state_dim, embed_dim) | same for each batch?
         hidden = F.elu(th.bmm(agent_dirs, w1) + b1)  # (bs*t, latent_state_dim, embed_dim)
 
         # Second layer
         w_final = th.abs(self.hyper_w_final(latent_states))  # produce (bs*t, embed_dim)
         w_final = w_final.view(-1, self.embed_dim, 1)  # (bs*t, embed_dim, 1)
         # State-dependent bias
-        v = self.V(states).view(-1, latent_state_dim, 1)  # bias (bs*t, latent_state_dim, 1)
+        v = self.V(states).view(-1, self.args.latent_state_dim, 1)  # bias (bs*t, latent_state_dim, 1)
         # Compute final output
         y = th.bmm(hidden, w_final) + v  # (bs*t, latent_state_dim, 1)
         # Reshape and return
