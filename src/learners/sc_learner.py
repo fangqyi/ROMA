@@ -84,9 +84,9 @@ class SCLearner:
 
         mask = mask.repeat(1, 1, self.n_agents).view(-1)
 
-        dirs_vals, execution_critic_train_stats = self._train_execution_critic(batch, terminated)
+        dirs_vals, execution_critic_train_stats = self._train_execution_critic(batch, terminated, mask)
         # [bs, seq_len, n_agents, latent_state_dim]
-        q_vals, control_critic_train_stats = self._train_control_critic(batch, rewards, terminated, actions)
+        q_vals, control_critic_train_stats = self._train_control_critic(batch, rewards, terminated, mask)
         # [bs, seq_len, n_agents]
         self.critic_training_steps += 1
 
@@ -233,7 +233,7 @@ class SCLearner:
         }
 
         for t in range(batch["reward"].shape[1]-1):
-            mask_t = mask[:, t].expand(-1, self.n_agents)
+            mask_t = mask[:, t]
             if mask_t.sum() == 0:
                 continue
 
@@ -258,7 +258,7 @@ class SCLearner:
         
         return qs_vals, running_log
 
-    def _train_execution_critic(self, batch, terminated):
+    def _train_execution_critic(self, batch, terminated, mask):
         bs = batch.batch_size
         dirs_tot_vals = torch.zeros(bs, batch["reward"].shape[1], self.n_agents, self.args.latent_state_dim)
 
@@ -268,6 +268,9 @@ class SCLearner:
         }
 
         for t in range(batch["reward"].shape[1]-1):
+            mask_t = mask[:, t]
+            if mask_t.sum() == 0:
+                continue
 
             # distance between latent states
             lat_state_target_dis = torch.sub(batch["latent_state"][:, t+1], batch["latent_state"][:, t])
