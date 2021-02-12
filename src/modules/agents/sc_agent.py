@@ -81,7 +81,7 @@ class LSTMAgent(nn.Module):
                 self.fc1.weight.new(batch_size, self.args.lstm_hidden_dim).zero_())
 
     def forward(self, inputs, hidden_state):
-        print("lstm forward fc1 shape:{}".format(inputs))
+        print("lstm forward fc1 shape:{}".format(inputs.shape))
         x = F.relu(self.fc1(inputs))
         h_in = (hidden_state[0].reshape(-1, self.args.lstm_hidden_dim),
                 hidden_state[1].reshape(-1, self.args.lstm_hidden_dim))
