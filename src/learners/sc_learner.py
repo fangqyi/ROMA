@@ -98,7 +98,7 @@ class SCLearner:
         lstm_r = []
         self.mac.init_hidden(bs)
         self.mac.init_goals(bs)
-        for t in range(batch["rewards"].shape[1] - 1):
+        for t in range(batch["reward"].shape[1] - 1):
             # skip inferring latent state
             lstm_output, dlstm_output = self.mac.forward(batch, t)
             lstm_out.append(lstm_output)  # [batch_num][n_agents][n_actions]
@@ -114,7 +114,7 @@ class SCLearner:
         lstm_r = torch.stack(lstm_r, dim=1)
 
         dlstm_loss_partial = []
-        for t in range(batch["rewards"].shape[1] - self.args.horizon):  # FIXEME: can implement slice instead of t iterations
+        for t in range(batch["reward"].shape[1] - self.args.horizon):  # FIXEME: can implement slice instead of t iterations
             dlstm_loss_partial_t = self._get_dlistm_partial(dirs_vals, dlstm_query_out, dlstm_key_out, dlstm_rule_out,
                                                               t)
             dlstm_loss_partial.append(dlstm_loss_partial_t)
@@ -224,14 +224,14 @@ class SCLearner:
 
     def _train_control_critic(self, batch, rewards, terminated, mask):  # FIXME: terminated?
         bs = batch.batch_size
-        qs_vals = torch.zeros(bs, batch["rewards"].shape[1], self.n_agents)
+        qs_vals = torch.zeros(bs, batch["reward"].shape[1], self.n_agents)
 
         running_log = {
             "control_critic_td_loss": [],
             "control_critic_grad_norm": [],
         }
 
-        for t in range(batch["rewards"].shape[1]-1):
+        for t in range(batch["reward"].shape[1]-1):
             mask_t = mask[:, t].expand(-1, self.n_agents)
             if mask_t.sum() == 0:
                 continue
@@ -258,14 +258,14 @@ class SCLearner:
 
     def _train_execution_critic(self, batch):
         bs = batch.batch_size
-        dirs_tot_vals = torch.zeros(bs, batch["rewards"].shape[1], self.n_agents, self.args.latent_state_dim)
+        dirs_tot_vals = torch.zeros(bs, batch["reward"].shape[1], self.n_agents, self.args.latent_state_dim)
 
         running_log = {
             "execution_critic_td_loss": [],
             "execution_critic_grad_norm": [],
         }
 
-        for t in range(batch["rewards"].shape[1]-1):
+        for t in range(batch["reward"].shape[1]-1):
 
             # distance between latent states
             lat_state_target_dis = torch.sub(batch["latent_state"][:, t+1], batch["latent_state"][:, t])
