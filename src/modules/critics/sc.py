@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
+import copy
 
 from utils.utils import identity, fanin_init, LayerNorm, product_of_gaussians, zeros, ones
 
@@ -45,7 +46,7 @@ class SCExecutionCritic(nn.Module):  # FIXME: Normalization across directional d
         inputs = []
 
         # latent_state
-        latent_state = batch["latent_state"][:, ts].repeat(1, self.n_agents, 1)  # [bs, n_agents, lat_state_size]
+        latent_state = copy.deepcopy(batch["latent_state"])[:, ts].repeat(1, self.n_agents, 1)  # [bs, n_agents, lat_state_size]
         inputs.append(latent_state)
 
         # local_observations
@@ -114,7 +115,7 @@ class SCControlCritic(nn.Module):
         inputs = []
 
         # latent_state
-        latent_state = batch["latent_state"][:, ts].repeat(1, self.n_agents, 1)  # [bs, n_agents, lat_state_size]
+        latent_state = copy.deepcopy(batch["latent_state"])[:, ts].repeat(1, self.n_agents, 1)  # [bs, n_agents, lat_state_size]
         inputs.append(latent_state)
 
         # local_observations
@@ -122,9 +123,9 @@ class SCControlCritic(nn.Module):
         inputs.append(observation)
 
         # keys, queries and rules
-        keys = batch["keys"][:, ts].squeeze(1)  # [bs, n_agents, comm_size]
-        queries = batch["queries"][:, ts].squeeze(1)
-        rules = batch["rules"][:, ts].squeeze(1)
+        keys = batch["keys"][:, ts]  # [bs, n_agents, comm_size]
+        queries = batch["queries"][:, ts]
+        rules = batch["rules"][:, ts]
         inputs.append(keys)
         inputs.append(queries)
         inputs.append(rules)
