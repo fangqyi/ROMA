@@ -20,7 +20,7 @@ class SCMAC():
         self.cur_dec_state = None
         self.latent_state_encoder = utils_REGISTRY[args.latent_state_encoder_class](
             input_size=scheme["state"]["vshape"],
-            output_size=self.args.laten_state_dim,
+            output_size=self.args.latent_state_dim,
             mlp_hidden_sizes=args.latent_state_encoder_hidden_sizes)
 
 
