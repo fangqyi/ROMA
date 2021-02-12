@@ -53,6 +53,8 @@ class MLPMultiGaussianEncoder(nn.Module):
 
     def forward(self, input):
         params = self.mlp(input)  #[batch_size, 2*output_size]
+        print("params shape")
+        print(params.shape)
         if self.use_information_bottleneck:
             mu = params[..., :self.output_size]
             sigma_squared = F.softplus(params[..., self.output_size:])
