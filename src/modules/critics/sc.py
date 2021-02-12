@@ -49,18 +49,18 @@ class SCExecutionCritic(nn.Module):  # FIXME: Normalization across directional d
         inputs.append(latent_state)
 
         # local_observations
-        observation = batch["obs"][:, ts].squeeze(1)
+        observation = batch["obs"][:, ts]
         inputs.append(observation)
 
         # actions
-        actions = batch["actions_onehot"][:, ts].squeeze(1) # [bs, n_agents, action_size]
+        actions = batch["actions_onehot"][:, ts] # [bs, n_agents, action_size]
         inputs.append(actions)
 
         # last actions
         if t == 0:
             last_actions = torch.zeros_like(actions)
         else:
-            last_actions = batch["actions_onehot"][:, slice(t - 1, t)].squeeze(1)
+            last_actions = batch["actions_onehot"][:, slice(t - 1, t)]
         inputs.append(last_actions)
 
         # agent_id
@@ -83,6 +83,7 @@ class SCControlCritic(nn.Module):
         self.n_agents = args.n_agents
 
         input_shape = self._get_input_shape(scheme)
+        print("sc control critic input shape:{}".format(input_shape))
         output_shape = 1
         self.output_type = "q"
 
@@ -102,6 +103,7 @@ class SCControlCritic(nn.Module):
     def forward(self, batch, t):
         inputs = self._build_inputs(batch, t)
         bs = batch.batch_size
+        print("sc control critic actual input:{}".format(inputs.shape))
         return self.critic(inputs).reshape(bs, self.n_agents)
 
     def _build_inputs(self, batch, t):
@@ -116,7 +118,7 @@ class SCControlCritic(nn.Module):
         inputs.append(latent_state)
 
         # local_observations
-        observation = batch["obs"][:, ts].squeeze(1)
+        observation = batch["obs"][:, ts]
         inputs.append(observation)
 
         # keys, queries and rules
@@ -133,9 +135,9 @@ class SCControlCritic(nn.Module):
             last_queries = torch.zeros_like(queries)
             last_rules = torch.zeros_like(rules)
         else:
-            last_keys = batch["keys"][:, slice(t - 1, t)].squeeze(1)
-            last_queries = batch["queries"][:, slice(t - 1, t)].squeeze(1)
-            last_rules = batch["rules"][:, slice(t - 1, t)].squeeze(1)
+            last_keys = batch["keys"][:, slice(t - 1, t)]
+            last_queries = batch["queries"][:, slice(t - 1, t)]
+            last_rules = batch["rules"][:, slice(t - 1, t)]
         inputs.append(last_keys)
         inputs.append(last_queries)
         inputs.append(last_rules)

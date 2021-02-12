@@ -233,7 +233,7 @@ class SCLearner:
         }
 
         for t in range(batch["reward"].shape[1]-1):
-            print(mask.shape)
+            # print(mask.shape)
             mask_t = mask[:, t]
             if mask_t.sum() == 0:
                 continue
@@ -269,7 +269,7 @@ class SCLearner:
         }
 
         for t in range(batch["reward"].shape[1]-1):
-            print(mask.shape)
+            # print(mask.shape)
             mask_t = mask[:, t]
             if mask_t.sum() == 0:
                 continue
