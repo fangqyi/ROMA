@@ -11,7 +11,7 @@ class SCMAC():
         input_shapes = self._get_input_shapes(scheme)
         output_shapes = self._get_output_shapes(scheme)
         self._build_agents(input_shapes, output_shapes, args)
-        self.agent_local_output_type = args.agent_local_output_type
+        self.agent_output_type = args.agent_output_type
         self.action_selector = action_REGISTRY[args.action_selector](args)
         self.comm_size = self.args.communication_query_and_signature_size
         self.rule_size = self.args.latent_state_dim
