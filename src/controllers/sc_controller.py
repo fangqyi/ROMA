@@ -199,7 +199,7 @@ class SCMAC():
 
         if self.args.obs_last_action:
             if t == 0:
-                lstm_inputs.append(torch.zeros(batch["actions_onehot"][:, t]))
+                lstm_inputs.append(torch.zeros_like(batch["actions_onehot"][:, t]))
                 dlstm_inputs.append(torch.zeros(bs, self.n_agents, self.args.communication_query_and_signature_size))
                 dlstm_inputs.append(torch.zeros(bs, self.n_agents, self.args.communication_query_and_signature_size))
                 dlstm_inputs.append(torch.zeros(bs, self.n_agents, self.args.latent_state_dim))
