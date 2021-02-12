@@ -9,6 +9,8 @@ from modules.critics.sc import SCControlCritic, SCExecutionCritic
 from modules.mixers.qmix import QMixer
 from modules.mixers.vdn import VDNMixer
 
+from src.modules.mixers.qmix import DirMixer
+
 
 class SCLearner:
     def __init__(self, mac, scheme, logger, args):
@@ -49,7 +51,7 @@ class SCLearner:
             if args.execution_mixer == "vdn":
                 self.execution_mixer = VDNMixer()
             elif args.execution_mixer == "qmix":
-                self.execution_mixer = QMixer(args)
+                self.execution_mixer = DirMixer(args)
             else:
                 raise ValueError("Mixer {} not recognised.".format(args.execution_mixer))
             self.target_execution_mixer = copy.deepcopy(self.execution_mixer)
