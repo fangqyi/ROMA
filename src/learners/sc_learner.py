@@ -82,8 +82,6 @@ class SCLearner:
         mask[:, 1:] = mask[:, 1:] * (1 - terminated[:, :-1])
         avail_actions = batch["avail_actions"][:, :-1]
 
-        #mask = mask.repeat(1, 1, self.n_agents).view(-1)
-
         dirs_vals, execution_critic_train_stats = self._train_execution_critic(batch, terminated, mask)
         # [bs, seq_len, n_agents, latent_state_dim]
         q_vals, control_critic_train_stats = self._train_control_critic(batch, rewards, terminated, mask)
@@ -131,6 +129,7 @@ class SCLearner:
         q_vals = q_vals.reshape(-1, 1)
         lstm_r = lstm_r.reshape(-1, 1)
 
+        mask = mask.repeat(1, 1, self.n_agents).view(-1)
         pi_taken = torch.gather(lstm_out, dim=2, index=actions.reshape(bs, -1, 1)).squeeze(2)
         pi_taken[mask == 0] = 1.0
         pi_taken = torch.prod(pi_taken, dim=1).squeeze(1)
